@@ -1,0 +1,49 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:generate": "prisma generate",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/types": "*",
+    "@aws-sdk/client-s3": "^3.787.0",
+    "@aws-sdk/s3-request-presigner": "^3.787.0",
+    "@prisma/client": "^6.8.2",
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "bcryptjs": "^3.0.2",
+    "canvas": "^3.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "face-api.js": "^0.22.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.39.1",
+    "prisma": "^6.8.2",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

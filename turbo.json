@@ -1,11 +1,23 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "ADMIN_EMAIL",
+    "ADMIN_PASSWORD",
+    "ADMIN_NAME",
+    "API_PUBLIC_URL",
+    "API_URL",
+    "NEXT_PUBLIC_API_URL",
+    "AUTH_SECRET",
+    "NEXTAUTH_URL",
+    "NEXTAUTH_SECRET"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]

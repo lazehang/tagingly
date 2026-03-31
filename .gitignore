@@ -27,6 +27,10 @@ out/
 build
 dist
 
+# API local data & face models
+apps/api/data/
+apps/api/face-models/
+**/face-models/
 
 # Debug
 npm-debug.log*

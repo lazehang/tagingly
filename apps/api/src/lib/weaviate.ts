@@ -1,0 +1,189 @@
+import { v5 as uuidv5 } from "uuid";
+import { loadEnv } from "../env.js";
+
+const FACE_CLASS = "FaceEmbedding";
+const NAMESPACE = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+
+type WeaviateGraphQLResponse = {
+  data?: {
+    Get?: Record<
+      string,
+      Array<{
+        userId?: string;
+        _additional?: { id?: string; certainty?: number; distance?: number };
+      }>
+    >;
+    Aggregate?: unknown;
+  };
+  errors?: Array<{ message: string }>;
+};
+
+function headers(): Record<string, string> {
+  const env = loadEnv();
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (env.WEAVIATE_API_KEY) {
+    h["Authorization"] = `Bearer ${env.WEAVIATE_API_KEY}`;
+  }
+  return h;
+}
+
+async function gql(query: string): Promise<WeaviateGraphQLResponse> {
+  const env = loadEnv();
+  const res = await fetch(`${env.WEAVIATE_URL}/v1/graphql`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Weaviate HTTP ${res.status}: ${t}`);
+  }
+  return (await res.json()) as WeaviateGraphQLResponse;
+}
+
+export async function ensureWeaviateSchema(): Promise<void> {
+  const env = loadEnv();
+  const schemaRes = await fetch(`${env.WEAVIATE_URL}/v1/schema`, {
+    headers: headers(),
+  });
+  if (!schemaRes.ok) {
+    throw new Error(`Weaviate schema list failed: ${await schemaRes.text()}`);
+  }
+  const schema = (await schemaRes.json()) as {
+    classes?: Array<{ class: string }>;
+  };
+  const exists = schema.classes?.some((c) => c.class === FACE_CLASS);
+  if (exists) return;
+
+  const create = await fetch(`${env.WEAVIATE_URL}/v1/schema`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({
+      class: FACE_CLASS,
+      vectorizer: "none",
+      properties: [
+        { name: "userId", dataType: ["text"] },
+        { name: "eventId", dataType: ["text"] },
+        { name: "source", dataType: ["text"] },
+        { name: "photoId", dataType: ["text"] },
+        { name: "faceIndex", dataType: ["int"] },
+      ],
+    }),
+  });
+  if (!create.ok) {
+    throw new Error(`Weaviate create class: ${await create.text()}`);
+  }
+}
+
+export async function upsertSelfieEmbedding(args: {
+  userId: string;
+  eventId: string;
+  vector: number[];
+}): Promise<void> {
+  const env = loadEnv();
+  const id = uuidv5(`${args.userId}-selfie`, NAMESPACE);
+  await fetch(`${env.WEAVIATE_URL}/v1/objects/${id}?class=${FACE_CLASS}`, {
+    method: "DELETE",
+    headers: headers(),
+  }).catch(() => undefined);
+
+  const res = await fetch(`${env.WEAVIATE_URL}/v1/objects`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({
+      id,
+      class: FACE_CLASS,
+      properties: {
+        userId: args.userId,
+        eventId: args.eventId,
+        source: "selfie",
+        photoId: "",
+        faceIndex: 0,
+      },
+      vector: args.vector,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Weaviate insert: ${await res.text()}`);
+  }
+}
+
+export async function deleteSelfieEmbeddings(userId: string): Promise<void> {
+  const q = `{
+    Get {
+      ${FACE_CLASS}(
+        where: {
+          operator: And,
+          operands: [
+            { path: ["userId"], operator: Equal, valueText: "${userId}" },
+            { path: ["source"], operator: Equal, valueText: "selfie" }
+          ]
+        }
+      ) {
+        _additional { id }
+      }
+    }
+  }`;
+  const data = await gql(q);
+  const rows = data.data?.Get?.[FACE_CLASS] ?? [];
+  const env = loadEnv();
+  for (const row of rows) {
+    const wid = row._additional?.id;
+    if (!wid) continue;
+    await fetch(
+      `${env.WEAVIATE_URL}/v1/objects/${wid}?class=${FACE_CLASS}`,
+      {
+        method: "DELETE",
+        headers: headers(),
+      }
+    );
+  }
+}
+
+/** Returns distinct userIds with cosine similarity above minCertainty */
+export async function matchUsersByFace(args: {
+  vector: number[];
+  eventId: string;
+  limit?: number;
+  minCertainty?: number;
+}): Promise<string[]> {
+  const limit = args.limit ?? 8;
+  const minCertainty = args.minCertainty ?? 0.55;
+  const vectorJson = JSON.stringify(args.vector);
+  const q = `{
+    Get {
+      ${FACE_CLASS}(
+        nearVector: {
+          vector: ${vectorJson}
+          certainty: ${minCertainty}
+        }
+        where: {
+          operator: And,
+          operands: [
+            { path: ["eventId"], operator: Equal, valueText: "${args.eventId}" },
+            { path: ["source"], operator: Equal, valueText: "selfie" }
+          ]
+        }
+        limit: ${limit}
+      ) {
+        userId
+        _additional { certainty distance }
+      }
+    }
+  }`;
+  const data = await gql(q);
+  if (data.errors?.length) {
+    throw new Error(data.errors.map((e) => e.message).join("; "));
+  }
+  const rows = data.data?.Get?.[FACE_CLASS] ?? [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const r of rows) {
+    const uid = r.userId;
+    if (uid && !seen.has(uid)) {
+      seen.add(uid);
+      out.push(uid);
+    }
+  }
+  return out;
+}

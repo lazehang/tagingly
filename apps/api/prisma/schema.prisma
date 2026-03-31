@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum PhotoStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  photos    Photo[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(USER)
+  eventId      String?
+  event        Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  selfieKey    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Photo {
+  id            String      @id @default(cuid())
+  eventId       String
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  storageKey    String
+  taggedUserIds String[]    @default([])
+  status        PhotoStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
