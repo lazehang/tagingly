@@ -9,11 +9,15 @@ const envSchema = z.object({
   SIGNED_URL_TTL_SECONDS: z.coerce.number().default(3600),
   WEAVIATE_URL: z.string().url().default("http://localhost:8080"),
   WEAVIATE_API_KEY: z.string().optional(),
-  MATCH_MIN_CERTAINTY: z.coerce.number().default(0.78),
-  MATCH_MIN_MARGIN: z.coerce.number().default(0.16),
+  MATCH_MIN_CERTAINTY: z.coerce.number().default(0.82),
+  MATCH_MIN_MARGIN: z.coerce.number().default(0.18),
   MATCH_MIN_FACE_AREA: z.coerce.number().default(80 * 80),
-  MATCH_MIN_DETECTION_SCORE: z.coerce.number().default(0.85),
-  MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE: z.coerce.number().default(0.86),
+  MATCH_MIN_DETECTION_SCORE: z.coerce.number().default(0.88),
+  MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE: z.coerce.number().default(0.9),
+  /** Min Weaviate hits (selfie embeddings) for same user; use 1 if guests only upload one selfie. */
+  MATCH_MIN_SELFIE_HITS: z.coerce.number().int().min(1).max(5).default(1),
+  /** At or above this certainty, tag goes straight to confirmed (still shown in review meta). */
+  MATCH_AUTO_CONFIRM_CERTAINTY: z.coerce.number().default(0.92),
   /** Concurrent photo jobs (1 recommended — face pipeline is memory-heavy). */
   PHOTO_PROCESS_CONCURRENCY: z.coerce.number().int().min(1).max(2).default(1),
   /** Max width/height before face detection (reduces RAM on large uploads). */

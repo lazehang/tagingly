@@ -1,4 +1,5 @@
 import { v5 as uuidv5 } from "uuid";
+import { l2Normalize } from "./faceVectors.js";
 import { loadEnv } from "../env.js";
 
 const FACE_CLASS = "FaceEmbedding";
@@ -84,6 +85,7 @@ export async function addSelfieEmbedding(args: {
   const env = loadEnv();
   const id = uuidv5(`${args.userId}-${args.selfieKey}`, NAMESPACE);
 
+  const vector = l2Normalize(args.vector);
   const res = await fetch(`${env.WEAVIATE_URL}/v1/objects`, {
     method: "POST",
     headers: headers(),
@@ -97,7 +99,7 @@ export async function addSelfieEmbedding(args: {
         photoId: args.selfieKey,
         faceIndex: 0,
       },
-      vector: args.vector,
+      vector,
     }),
   });
   if (!res.ok) {
@@ -149,16 +151,22 @@ export async function deleteSelfieEmbeddings(userId: string): Promise<void> {
   }
 }
 
-/** Returns distinct userIds with cosine similarity above minCertainty */
+export type AggregatedFaceMatch = {
+  userId: string;
+  certainty: number;
+  hitCount: number;
+};
+
+/** Best match per user (max certainty across their selfie embeddings). */
 export async function matchUsersByFace(args: {
   vector: number[];
   eventId: string;
   limit?: number;
   minCertainty?: number;
-}): Promise<Array<{ userId: string; certainty: number }>> {
-  const limit = args.limit ?? 8;
+}): Promise<AggregatedFaceMatch[]> {
+  const limit = args.limit ?? 32;
   const minCertainty = args.minCertainty ?? 0.55;
-  const vectorJson = JSON.stringify(args.vector);
+  const vectorJson = JSON.stringify(l2Normalize(args.vector));
   const q = `{
     Get {
       ${FACE_CLASS}(
@@ -185,12 +193,21 @@ export async function matchUsersByFace(args: {
     throw new Error(data.errors.map((e) => e.message).join("; "));
   }
   const rows = data.data?.Get?.[FACE_CLASS] ?? [];
-  const out: Array<{ userId: string; certainty: number }> = [];
+  const byUser = new Map<string, AggregatedFaceMatch>();
   for (const r of rows) {
     const uid = r.userId;
     const certainty = r._additional?.certainty;
     if (!uid || typeof certainty !== "number") continue;
-    out.push({ userId: uid, certainty });
+    const prev = byUser.get(uid);
+    if (!prev) {
+      byUser.set(uid, { userId: uid, certainty, hitCount: 1 });
+    } else {
+      byUser.set(uid, {
+        userId: uid,
+        certainty: Math.max(prev.certainty, certainty),
+        hitCount: prev.hitCount + 1,
+      });
+    }
   }
-  return out;
+  return [...byUser.values()].sort((a, b) => b.certainty - a.certainty);
 }

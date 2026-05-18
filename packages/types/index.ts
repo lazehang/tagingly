@@ -55,6 +55,8 @@ export interface TaggedUserDto {
   email: string;
   certainty?: number;
   tagKind: TagKind;
+  /** Reference selfies used for matching (shown when reviewing proposals). */
+  selfies?: UserSelfieDto[];
 }
 
 export interface PhotoDto {
@@ -102,4 +104,5 @@ export interface EventUserSearchResult {
   id: string;
   name: string;
   email: string;
+  selfies?: UserSelfieDto[];
 }

@@ -3,6 +3,7 @@ import type { Readable } from "node:stream";
 import path from "node:path";
 import type { Response } from "express";
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -60,6 +61,25 @@ export async function uploadObject(
       Key: storageKey,
       Body: body,
       ContentType: contentType,
+    })
+  );
+}
+
+export async function deleteObject(storageKey: string): Promise<void> {
+  const env = loadEnv();
+  if (env.USE_LOCAL_STORAGE || !env.B2_BUCKET_NAME) {
+    const full = path.join(localRoot(), storageKey);
+    if (existsSync(full)) {
+      const { unlinkSync } = await import("node:fs");
+      unlinkSync(full);
+    }
+    return;
+  }
+  const client = getS3();
+  await client.send(
+    new DeleteObjectCommand({
+      Bucket: env.B2_BUCKET_NAME!,
+      Key: storageKey,
     })
   );
 }

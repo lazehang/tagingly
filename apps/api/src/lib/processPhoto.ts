@@ -7,6 +7,7 @@ import {
   getExcludedUserIds,
   type ProposedMatchMetaEntry,
 } from "./tagging.js";
+import { acceptFaceMatch } from "./matchPolicy.js";
 
 export async function processEventPhoto(photoId: string): Promise<void> {
   const photo = await prisma.photo.findUnique({ where: { id: photoId } });
@@ -24,62 +25,60 @@ export async function processEventPhoto(photoId: string): Promise<void> {
       buffer = Buffer.alloc(0);
       face.releaseFacePipelineMemory();
     }
+
     const matched = new Map<string, number>();
+    const thresholds = {
+      minCertainty: env.MATCH_MIN_CERTAINTY,
+      minMargin: env.MATCH_MIN_MARGIN,
+      minCertaintySingleCandidate: env.MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE,
+      minSelfieHits: env.MATCH_MIN_SELFIE_HITS,
+    };
+    const weaviateFloor = Math.max(0.5, env.MATCH_MIN_CERTAINTY - 0.06);
 
     for (const faceResult of faces) {
       if (faceResult.faceArea < env.MATCH_MIN_FACE_AREA) continue;
       if (faceResult.score < env.MATCH_MIN_DETECTION_SCORE) continue;
+
       const candidates = await matchUsersByFace({
         vector: Array.from(faceResult.descriptor),
         eventId: photo.eventId,
-        limit: 10,
-        minCertainty: Math.max(0, env.MATCH_MIN_CERTAINTY - 0.08),
+        limit: 32,
+        minCertainty: weaviateFloor,
       });
-      if (candidates.length === 0) continue;
+      const filtered = candidates.filter((c) => !excluded.has(c.userId));
+      const accepted = acceptFaceMatch(filtered, thresholds);
+      if (!accepted) continue;
 
-      const bestByUser = new Map<string, number>();
-      for (const c of candidates) {
-        if (excluded.has(c.userId)) continue;
-        const prev = bestByUser.get(c.userId);
-        if (prev === undefined || c.certainty > prev) {
-          bestByUser.set(c.userId, c.certainty);
-        }
-      }
-      const sorted = [...bestByUser.entries()]
-        .map(([userId, certainty]) => ({ userId, certainty }))
-        .sort((a, b) => b.certainty - a.certainty);
-
-      if (sorted.length === 0) continue;
-
-      const top1 = sorted[0]!;
-      const top2 = sorted[1];
-      const margin = top2 ? top1.certainty - top2.certainty : 0;
-
-      const accept =
-        top1.certainty >= env.MATCH_MIN_CERTAINTY &&
-        (top2
-          ? margin >= env.MATCH_MIN_MARGIN
-          : top1.certainty >= env.MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE);
-
-      if (accept && !excluded.has(top1.userId)) {
-        const prev = matched.get(top1.userId);
-        if (prev === undefined || top1.certainty > prev) {
-          matched.set(top1.userId, top1.certainty);
-        }
+      const prev = matched.get(accepted.userId);
+      if (prev === undefined || accepted.certainty > prev) {
+        matched.set(accepted.userId, accepted.certainty);
       }
     }
 
-    const proposedMatchMeta: ProposedMatchMetaEntry[] = [...matched.entries()].map(
-      ([userId, certainty]) => ({ userId, certainty })
+    const proposedMeta: ProposedMatchMetaEntry[] = [];
+    const newConfirmed: string[] = [];
+
+    for (const [userId, certainty] of matched) {
+      if (certainty >= env.MATCH_AUTO_CONFIRM_CERTAINTY) {
+        newConfirmed.push(userId);
+      }
+      proposedMeta.push({ userId, certainty });
+    }
+
+    const proposedUserIds = proposedMeta
+      .filter((m) => !newConfirmed.includes(m.userId))
+      .map((m) => m.userId);
+
+    const confirmedUserIds = Array.from(
+      new Set([...photo.confirmedUserIds, ...newConfirmed])
     );
-    const proposedUserIds = proposedMatchMeta.map((m) => m.userId);
 
     await prisma.photo.update({
       where: { id: photoId },
       data: {
         proposedUserIds,
-        proposedMatchMeta:
-          proposedMatchMeta as unknown as Prisma.InputJsonValue,
+        proposedMatchMeta: proposedMeta as unknown as Prisma.InputJsonValue,
+        confirmedUserIds,
         status: PhotoStatus.PROCESSED,
       },
     });

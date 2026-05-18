@@ -5,6 +5,7 @@ import {
 } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import type { PhotoDetailDto, TaggedUserDto } from "@repo/types";
+import { listSelfiesForUsers } from "./selfies.js";
 import { getSignedReadUrl } from "./storage.js";
 
 export type ProposedMatchMetaEntry = { userId: string; certainty: number };
@@ -227,6 +228,7 @@ export async function buildTaggedUsers(
     select: { id: true, name: true, email: true },
   });
   const userMap = new Map(users.map((u) => [u.id, u]));
+  const selfiesByUser = await listSelfiesForUsers(allIds);
   const confirmedSet = new Set(photo.confirmedUserIds);
   const tagged: TaggedUserDto[] = [];
 
@@ -239,6 +241,7 @@ export async function buildTaggedUsers(
       email: u.email,
       certainty: certaintyByUser.get(id),
       tagKind: "confirmed",
+      selfies: selfiesByUser.get(id) ?? [],
     });
   }
   for (const id of photo.proposedUserIds) {
@@ -251,6 +254,7 @@ export async function buildTaggedUsers(
       email: u.email,
       certainty: certaintyByUser.get(id),
       tagKind: "proposed",
+      selfies: selfiesByUser.get(id) ?? [],
     });
   }
   return tagged;

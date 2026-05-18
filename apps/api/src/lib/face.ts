@@ -2,6 +2,7 @@ import path from "node:path";
 import { existsSync, mkdirSync } from "node:fs";
 import type { Image } from "canvas";
 import { loadEnv } from "../env.js";
+import { l2Normalize } from "./faceVectors.js";
 
 const MODEL_FILES = [
   "ssd_mobilenetv1_model-weights_manifest.json",
@@ -104,7 +105,8 @@ export async function descriptorFromSelfieImage(
     .detectSingleFace(image as never)
     .withFaceLandmarks()
     .withFaceDescriptor();
-  return det?.descriptor ?? null;
+  if (!det?.descriptor) return null;
+  return new Float32Array(l2Normalize(det.descriptor));
 }
 
 export async function descriptorsFromEventPhoto(
@@ -119,7 +121,7 @@ export async function descriptorsFromEventPhoto(
     .withFaceDescriptors();
   const areaScale = pixelScale * pixelScale;
   return dets.map((d) => ({
-    descriptor: d.descriptor,
+    descriptor: new Float32Array(l2Normalize(d.descriptor)),
     faceArea: Math.max(
       0,
       (d.detection.box.width * d.detection.box.height) / areaScale

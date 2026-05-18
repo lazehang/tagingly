@@ -14,6 +14,7 @@ import type {
   PhotoDetailDto,
   PhotoDto,
   TaggedUserDto,
+  UserSelfieDto,
 } from "@repo/types";
 
 function authHeaders(token: string) {
@@ -21,6 +22,35 @@ function authHeaders(token: string) {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
+}
+
+function UserSelfieStrip({ selfies }: { selfies: UserSelfieDto[] }) {
+  if (!selfies.length) {
+    return (
+      <p className="text-xs text-muted-foreground">No reference selfies on file.</p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {selfies.map((s) => (
+        <div
+          key={s.id}
+          className="relative h-16 w-16 overflow-hidden rounded-md border border-border bg-card/60"
+          title="Reference selfie"
+        >
+          {s.url ? (
+            <Image
+              src={s.url}
+              alt=""
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function TagRow({
@@ -40,43 +70,52 @@ function TagRow({
     tag.certainty !== undefined
       ? `${Math.round(tag.certainty * 100)}% match`
       : null;
+  const selfies = tag.selfies ?? [];
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card/40 px-3 py-2 text-sm">
-      <div className="min-w-0">
-        <p className="truncate font-medium">{tag.name}</p>
-        <p className="truncate text-xs text-muted-foreground">{tag.email}</p>
-        {pct ? (
-          <p className="text-xs text-muted-foreground">{pct}</p>
-        ) : null}
+    <li className="space-y-2 rounded-md border border-border bg-card/40 px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{tag.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{tag.email}</p>
+          {pct ? (
+            <p className="text-xs text-muted-foreground">{pct}</p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 gap-1">
+          {tag.tagKind === "proposed" && onConfirm ? (
+            <Button type="button" size="sm" disabled={busy} onClick={onConfirm}>
+              Confirm
+            </Button>
+          ) : null}
+          {tag.tagKind === "proposed" && onReject ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={onReject}
+            >
+              Reject
+            </Button>
+          ) : null}
+          {tag.tagKind === "confirmed" && onRemove ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={onRemove}
+            >
+              Remove
+            </Button>
+          ) : null}
+        </div>
       </div>
-      <div className="flex shrink-0 gap-1">
-        {tag.tagKind === "proposed" && onConfirm ? (
-          <Button type="button" size="sm" disabled={busy} onClick={onConfirm}>
-            Confirm
-          </Button>
-        ) : null}
-        {tag.tagKind === "proposed" && onReject ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={onReject}
-          >
-            Reject
-          </Button>
-        ) : null}
-        {tag.tagKind === "confirmed" && onRemove ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={onRemove}
-          >
-            Remove
-          </Button>
-        ) : null}
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">
+          Reference selfies
+        </p>
+        <UserSelfieStrip selfies={selfies} />
       </div>
     </li>
   );
@@ -87,11 +126,13 @@ export function PhotoReviewModal({
   photo,
   open,
   onOpenChange,
+  onDeleted,
 }: {
   eventId: string;
   photo: PhotoDto;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDeleted?: () => void;
 }) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -158,6 +199,30 @@ export function PhotoReviewModal({
     router.refresh();
   }
 
+  async function deletePhoto() {
+    if (
+      !confirm(
+        "Delete this event photo permanently? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const res = await fetch(
+      `${publicApiBase()}/events/${eventId}/photos/${photo.id}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+    );
+    setBusy(false);
+    if (!res.ok) {
+      setError("Could not delete photo.");
+      return;
+    }
+    onOpenChange(false);
+    onDeleted?.();
+    router.refresh();
+  }
+
   const proposed =
     detail?.taggedUsers.filter((t) => t.tagKind === "proposed") ?? [];
   const confirmed =
@@ -168,8 +233,9 @@ export function PhotoReviewModal({
     <Modal open={open} onOpenChange={onOpenChange} contentClassName="max-w-3xl">
       <ModalTitle>Review photo</ModalTitle>
       <ModalDescription className="mb-4">
-        Confirm or reject proposed tags. Removed tags are remembered so
-        reprocessing will not suggest them again.
+        High-confidence matches are auto-confirmed; others appear here as
+        proposed. Compare to reference selfies before approving. Rejected tags
+        are remembered so reprocessing will not suggest them again.
       </ModalDescription>
 
       {imageUrl ? (
@@ -267,12 +333,12 @@ export function PhotoReviewModal({
           onChange={(e) => setSearchQ(e.target.value)}
         />
         {searchResults.length > 0 ? (
-          <ul className="mt-2 max-h-40 overflow-y-auto rounded-md border">
+          <ul className="mt-2 max-h-56 overflow-y-auto rounded-md border">
             {searchResults.map((u) => (
-              <li key={u.id}>
+              <li key={u.id} className="border-b border-border/60 last:border-0">
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-card/60"
+                  className="flex w-full flex-col gap-2 px-3 py-2 text-left text-sm hover:bg-card/60"
                   disabled={busy}
                   onClick={() =>
                     runAction(() =>
@@ -293,10 +359,15 @@ export function PhotoReviewModal({
                     )
                   }
                 >
-                  <span>
-                    {u.name} · {u.email}
+                  <span className="flex w-full items-center justify-between">
+                    <span>
+                      {u.name} · {u.email}
+                    </span>
+                    <span className="text-xs text-primary">Add</span>
                   </span>
-                  <span className="text-xs text-primary">Add</span>
+                  {u.selfies?.length ? (
+                    <UserSelfieStrip selfies={u.selfies} />
+                  ) : null}
                 </button>
               </li>
             ))}
@@ -341,6 +412,15 @@ export function PhotoReviewModal({
         <Button
           type="button"
           size="sm"
+          variant="destructive"
+          disabled={busy}
+          onClick={() => void deletePhoto()}
+        >
+          Delete photo
+        </Button>
+        <Button
+          type="button"
+          size="sm"
           variant="ghost"
           onClick={() => onOpenChange(false)}
         >
@@ -358,45 +438,89 @@ export function PhotoCardWithReview({
   eventId: string;
   photo: PhotoDto;
 }) {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const token = session?.accessToken ?? "";
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  if (hidden) return null;
+
+  async function deletePhoto(e: React.MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    if (
+      !confirm(
+        "Delete this event photo permanently? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setDeleting(true);
+    const res = await fetch(
+      `${publicApiBase()}/events/${eventId}/photos/${photo.id}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+    );
+    setDeleting(false);
+    if (!res.ok) {
+      alert("Could not delete photo.");
+      return;
+    }
+    setHidden(true);
+    router.refresh();
+  }
 
   return (
     <>
-      <button
-        type="button"
-        className="w-full text-left"
-        onClick={() => setOpen(true)}
-      >
-        <Card className="overflow-hidden transition-shadow hover:shadow-md">
-          {photo.photoUrl ? (
-            <div className="relative aspect-[4/3] w-full bg-card/50">
-              <Image
-                src={photo.photoUrl}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 33vw"
-                unoptimized
-              />
-            </div>
-          ) : null}
-          <CardContent className="p-3 text-xs">
-            <p>
-              Status: <strong>{photo.status}</strong>
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Proposed: {photo.proposedUserIds.length} · Confirmed:{" "}
-              {photo.confirmedUserIds.length}
-            </p>
-            <p className="mt-2 text-primary">Click to review tags →</p>
-          </CardContent>
-        </Card>
-      </button>
+      <div className="relative">
+        <button
+          type="button"
+          className="w-full text-left"
+          onClick={() => setOpen(true)}
+        >
+          <Card className="overflow-hidden transition-shadow hover:shadow-md">
+            {photo.photoUrl ? (
+              <div className="relative aspect-[4/3] w-full bg-card/50">
+                <Image
+                  src={photo.photoUrl}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  unoptimized
+                />
+              </div>
+            ) : null}
+            <CardContent className="p-3 text-xs">
+              <p>
+                Status: <strong>{photo.status}</strong>
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                Proposed: {photo.proposedUserIds.length} · Confirmed:{" "}
+                {photo.confirmedUserIds.length}
+              </p>
+              <p className="mt-2 text-primary">Click to review tags →</p>
+            </CardContent>
+          </Card>
+        </button>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          className="absolute right-2 top-2 z-10 opacity-90"
+          disabled={deleting}
+          onClick={deletePhoto}
+        >
+          {deleting ? "…" : "Delete"}
+        </Button>
+      </div>
       <PhotoReviewModal
         eventId={eventId}
         photo={photo}
         open={open}
         onOpenChange={setOpen}
+        onDeleted={() => setHidden(true)}
       />
     </>
   );

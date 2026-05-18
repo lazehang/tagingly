@@ -18,6 +18,43 @@ export async function toUserSelfieDto(
   };
 }
 
+/** Batch-load selfies for multiple users (e.g. admin tag review). */
+export async function listSelfiesForUsers(
+  userIds: string[]
+): Promise<Map<string, UserSelfieDto[]>> {
+  const out = new Map<string, UserSelfieDto[]>();
+  if (userIds.length === 0) return out;
+
+  const unique = [...new Set(userIds)];
+  const rows = await prisma.userSelfie.findMany({
+    where: { userId: { in: unique } },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const usersWithoutRows = unique.filter(
+    (id) => !rows.some((r) => r.userId === id)
+  );
+  if (usersWithoutRows.length > 0) {
+    const legacy = await prisma.user.findMany({
+      where: { id: { in: usersWithoutRows }, selfieKey: { not: null } },
+      select: { id: true, selfieKey: true },
+    });
+    for (const u of legacy) {
+      if (!u.selfieKey) continue;
+      const created = await prisma.userSelfie.create({
+        data: { userId: u.id, storageKey: u.selfieKey },
+      });
+      rows.push(created);
+    }
+  }
+
+  for (const id of unique) {
+    const userRows = rows.filter((r) => r.userId === id);
+    out.set(id, await Promise.all(userRows.map(toUserSelfieDto)));
+  }
+  return out;
+}
+
 export async function listUserSelfies(userId: string): Promise<UserSelfieDto[]> {
   let rows = await prisma.userSelfie.findMany({
     where: { userId },

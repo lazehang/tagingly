@@ -12,6 +12,8 @@ import {
   listAccessibleEvents,
 } from "../lib/eventAccess.js";
 import { isSuperadmin } from "../lib/roles.js";
+import { deleteEventPhoto } from "../lib/eventPhotos.js";
+import { listSelfiesForUsers } from "../lib/selfies.js";
 import { uploadObject, getSignedReadUrl } from "../lib/storage.js";
 import { enqueuePhotoProcessing } from "../lib/photoQueue.js";
 import type {
@@ -323,7 +325,13 @@ router.get("/:eventId/users/search", requireEventAccess, async (req, res) => {
     take: 20,
     orderBy: { name: "asc" },
   });
-  res.json({ users });
+  const selfiesByUser = await listSelfiesForUsers(users.map((u) => u.id));
+  res.json({
+    users: users.map((u) => ({
+      ...u,
+      selfies: selfiesByUser.get(u.id) ?? [],
+    })) satisfies EventUserSearchResult[],
+  });
 });
 
 router.post(
@@ -393,6 +401,30 @@ router.get("/:eventId/photos/:photoId", requireEventAccess, async (req, res) => 
   const detail: PhotoDetailDto = await toPhotoDetailDto(photo);
   res.json({ photo: detail });
 });
+
+router.delete(
+  "/:eventId/photos/:photoId",
+  requireEventAccess,
+  async (req, res) => {
+    const { eventId, photoId } = req.params;
+    if (!eventId || !photoId) {
+      res.status(400).json({ error: "Missing ids" });
+      return;
+    }
+    try {
+      await deleteEventPhoto(eventId, photoId);
+      res.status(204).send();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Delete failed";
+      if (message === "Photo not found") {
+        res.status(404).json({ error: message });
+        return;
+      }
+      console.error("deleteEventPhoto", e);
+      res.status(500).json({ error: "Could not delete photo" });
+    }
+  }
+);
 
 router.post("/:eventId/photos/:photoId/confirm", requireEventAccess, async (req, res) => {
   const { eventId, photoId } = req.params;
