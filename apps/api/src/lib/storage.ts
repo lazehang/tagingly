@@ -34,6 +34,10 @@ function localRoot(): string {
   return path.join(process.cwd(), "data", "blob");
 }
 
+function blobCacheControl(): string {
+  return loadEnv().BLOB_CACHE_CONTROL;
+}
+
 export function ensureLocalDir(): void {
   const root = localRoot();
   if (!existsSync(root)) {
@@ -61,6 +65,7 @@ export async function uploadObject(
       Key: storageKey,
       Body: body,
       ContentType: contentType,
+      CacheControl: blobCacheControl(),
     })
   );
 }
@@ -131,6 +136,7 @@ export async function pipeObjectToResponse(
   const env = loadEnv();
   if (env.USE_LOCAL_STORAGE || !env.B2_BUCKET_NAME) {
     const full = path.join(localRoot(), storageKey);
+    res.setHeader("Cache-Control", blobCacheControl());
     createReadStream(full).pipe(res);
     return;
   }
@@ -142,6 +148,10 @@ export async function pipeObjectToResponse(
     })
   );
   if (out.ContentType) res.setHeader("Content-Type", out.ContentType);
+  res.setHeader(
+    "Cache-Control",
+    out.CacheControl ?? blobCacheControl()
+  );
   (out.Body as Readable).pipe(res);
 }
 

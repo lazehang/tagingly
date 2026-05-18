@@ -34,6 +34,10 @@ const envSchema = z.object({
   B2_BUCKET_NAME: z.string().optional(),
   B2_ENDPOINT: z.string().optional(),
   B2_REGION: z.string().optional(),
+  /** Cache-Control for uploaded blobs and local /blobs responses. */
+  BLOB_CACHE_CONTROL: z
+    .string()
+    .default("public, max-age=31536000, immutable"),
 });
 
 export type Env = z.infer<typeof envSchema>;
