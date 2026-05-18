@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { User, UserSelfie } from "@prisma/client";
 import { prisma } from "./prisma.js";
-import { descriptorFromSelfieImage } from "./face.js";
 import { addSelfieEmbedding, deleteSelfieEmbeddingByKey } from "./weaviate.js";
 import { getSignedReadUrl, uploadObject } from "./storage.js";
 import type { UserSelfieDto } from "@repo/types";
@@ -51,7 +50,10 @@ export async function addUserSelfie(args: {
     throw new Error(`Maximum ${MAX_SELFIES} selfies allowed`);
   }
 
+  const { descriptorFromSelfieImage, releaseFacePipelineMemory } =
+    await import("./face.js");
   const desc = await descriptorFromSelfieImage(args.buffer);
+  releaseFacePipelineMemory();
   if (!desc) {
     throw new Error("No face detected in selfie");
   }
@@ -117,9 +119,12 @@ export async function createSelfiesFromRegistration(args: {
   eventId: string;
   files: Express.Multer.File[];
 }): Promise<string | null> {
+  const { descriptorFromSelfieImage, releaseFacePipelineMemory } =
+    await import("./face.js");
   let primaryKey: string | null = null;
   for (const file of args.files) {
     const desc = await descriptorFromSelfieImage(file.buffer);
+    releaseFacePipelineMemory();
     if (!desc) continue;
     const storageKey = `events/${args.eventId}/selfies/${randomUUID()}.jpg`;
     await uploadObject(

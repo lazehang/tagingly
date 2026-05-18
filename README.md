@@ -269,7 +269,7 @@ If initialization fails, photo processing falls back to marking photos as failed
 
 ## Troubleshooting
 
-- **Railway / Docker exit code 137 (`Killed`)** — the Linux OOM killer stopped the API when memory ran out. Face detection loads **TensorFlow** (~hundreds of MB). In Railway → service → **Settings** → increase **Memory** to at least **2 GB** (4 GB if you process large event photos). The [`apps/api/Dockerfile`](apps/api/Dockerfile) pre-downloads `face-models/` at build time to avoid an extra spike on first request. Optional env: `TF_CPP_MIN_LOG_LEVEL=2` (already set in the Dockerfile) hides oneDNN INFO logs.
+- **Railway / Docker exit code 137 (`Killed`) or `SIGTERM` during reprocess** — Linux **OOM** killed the Node process (TensorFlow + canvas + image buffers can exceed **512 MB** default Railway RAM). Fix: Railway → API service → **Settings** → **Memory ≥ 2048 MB** (4096 MB for large events). Keep `PHOTO_PROCESS_CONCURRENCY=1`. Photos are processed **one at a time**; bulk reprocess queues in the background. `SIGTERM` on deploy is normal; the API drains the queue before exit. Deprecation lines (`util.isArray`) come from older TF/face-api deps and are harmless. Check `GET /health` for `memoryMb` and `photoQueue` while debugging.
 - **CORS errors** — set `CORS_ORIGIN` on the API to the exact web origin (e.g. `http://localhost:3001`).
 - **Prisma P6001 (`prisma://` URL required)** — regenerate the client with the query engine: `cd apps/api && npx prisma generate`. Local dev should use `postgresql://…` in `DATABASE_URL`, not Accelerate, unless you configure Accelerate intentionally.
 - **Weaviate errors** — ensure Compose is up and `WEAVIATE_URL` matches; the API creates the `FaceEmbedding` class on startup.

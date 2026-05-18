@@ -1,7 +1,6 @@
 import { PhotoStatus, type Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { getObjectBuffer } from "./storage.js";
-import { descriptorsFromEventPhoto } from "./face.js";
 import { matchUsersByFace } from "./weaviate.js";
 import { loadEnv } from "../env.js";
 import {
@@ -16,15 +15,22 @@ export async function processEventPhoto(photoId: string): Promise<void> {
   try {
     const env = loadEnv();
     const excluded = await getExcludedUserIds(photoId);
-    const buffer = await getObjectBuffer(photo.storageKey);
-    const faces = await descriptorsFromEventPhoto(buffer);
+    let buffer = await getObjectBuffer(photo.storageKey);
+    const face = await import("./face.js");
+    let faces;
+    try {
+      faces = await face.descriptorsFromEventPhoto(buffer);
+    } finally {
+      buffer = Buffer.alloc(0);
+      face.releaseFacePipelineMemory();
+    }
     const matched = new Map<string, number>();
 
-    for (const face of faces) {
-      if (face.faceArea < env.MATCH_MIN_FACE_AREA) continue;
-      if (face.score < env.MATCH_MIN_DETECTION_SCORE) continue;
+    for (const faceResult of faces) {
+      if (faceResult.faceArea < env.MATCH_MIN_FACE_AREA) continue;
+      if (faceResult.score < env.MATCH_MIN_DETECTION_SCORE) continue;
       const candidates = await matchUsersByFace({
-        vector: Array.from(face.descriptor),
+        vector: Array.from(faceResult.descriptor),
         eventId: photo.eventId,
         limit: 10,
         minCertainty: Math.max(0, env.MATCH_MIN_CERTAINTY - 0.08),

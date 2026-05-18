@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/app-shell";
 import { serverApiFetch } from "@/lib/server-api";
-import { PhotoCarousel } from "../photo-carousel";
+import { PhotoGallery } from "../photo-gallery";
 import type { PhotoDto, UserPhotosResponse, UserPublicDto } from "@repo/types";
 
 export default async function PortalGalleryPage() {
@@ -28,9 +28,9 @@ export default async function PortalGalleryPage() {
     <div className="space-y-6">
       <PageHeader
         title="My gallery"
-        description="Photos you have been tagged in. Use arrow keys to navigate."
+        description="Photos you have been tagged in. Browse the grid and click to open."
       />
-      <PhotoCarousel
+      <PhotoGallery
         photos={photos as PhotoDto[]}
         allowUserDownloads={allowDownload}
       />

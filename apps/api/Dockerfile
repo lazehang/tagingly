@@ -41,7 +41,10 @@ RUN mkdir -p /app/apps/api/face-models \
 
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
-# Quieter TensorFlow logs (oneDNN INFO lines)
+# Quieter TensorFlow / Node deprecation noise in logs
 ENV TF_CPP_MIN_LOG_LEVEL=2
+ENV NODE_NO_WARNINGS=1
+# Cap V8 heap; native TF/canvas also need RAM — use ≥2GB container on Railway
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 EXPOSE 4000
 CMD ["node", "dist/index.js"]

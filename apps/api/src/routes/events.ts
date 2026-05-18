@@ -13,7 +13,7 @@ import {
 } from "../lib/eventAccess.js";
 import { isSuperadmin } from "../lib/roles.js";
 import { uploadObject, getSignedReadUrl } from "../lib/storage.js";
-import { processEventPhoto } from "../lib/processPhoto.js";
+import { enqueuePhotoProcessing } from "../lib/photoQueue.js";
 import type {
   EventDto,
   EventOrganizerDto,
@@ -34,11 +34,18 @@ import {
   getPhotoForEvent,
   PermissionError,
 } from "../lib/permissions.js";
+import { loadEnv } from "../env.js";
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 40 * 1024 * 1024 },
-});
+function createPhotoUpload() {
+  const env = loadEnv();
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: env.PHOTO_UPLOAD_MAX_FILE_MB * 1024 * 1024,
+      files: env.PHOTO_UPLOAD_MAX_FILES,
+    },
+  });
+}
 
 const router = Router();
 
@@ -322,7 +329,10 @@ router.get("/:eventId/users/search", requireEventAccess, async (req, res) => {
 router.post(
   "/:eventId/photos",
   requireEventAccess,
-  upload.array("photos", 30),
+  (req, res, next) => {
+    const env = loadEnv();
+    createPhotoUpload().array("photos", env.PHOTO_UPLOAD_MAX_FILES)(req, res, next);
+  },
   async (req, res) => {
     const eventId = req.params.eventId;
     if (!eventId) {
@@ -348,9 +358,7 @@ router.post(
       const photo = await prisma.photo.create({
         data: { eventId, storageKey: key },
       });
-      setImmediate(() => {
-        void processEventPhoto(photo.id);
-      });
+      enqueuePhotoProcessing(photo.id);
       photos.push(await toPhotoDto(photo));
     }
     res.status(201).json({ photos });
@@ -566,7 +574,7 @@ router.post(
         status: PhotoStatus.PENDING,
       },
     });
-    setImmediate(() => void processEventPhoto(photoId));
+    enqueuePhotoProcessing(photoId);
     res.json({ ok: true });
   }
 );
@@ -604,10 +612,15 @@ router.post("/:eventId/photos/reprocess", requireEventAccess, async (req, res) =
   });
 
   for (const p of photos) {
-    setImmediate(() => void processEventPhoto(p.id));
+    enqueuePhotoProcessing(p.id);
   }
 
-  res.json({ ok: true, count: photos.length });
+  res.json({
+    ok: true,
+    count: photos.length,
+    message:
+      "Photos queued for processing. Large batches run sequentially to limit memory use.",
+  });
 });
 
 export default router;

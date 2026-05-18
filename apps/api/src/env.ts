@@ -14,6 +14,12 @@ const envSchema = z.object({
   MATCH_MIN_FACE_AREA: z.coerce.number().default(80 * 80),
   MATCH_MIN_DETECTION_SCORE: z.coerce.number().default(0.85),
   MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE: z.coerce.number().default(0.86),
+  /** Concurrent photo jobs (1 recommended — face pipeline is memory-heavy). */
+  PHOTO_PROCESS_CONCURRENCY: z.coerce.number().int().min(1).max(2).default(1),
+  /** Max width/height before face detection (reduces RAM on large uploads). */
+  PHOTO_MAX_IMAGE_DIMENSION: z.coerce.number().int().min(512).max(4096).default(1280),
+  PHOTO_UPLOAD_MAX_FILE_MB: z.coerce.number().int().min(1).max(40).default(15),
+  PHOTO_UPLOAD_MAX_FILES: z.coerce.number().int().min(1).max(30).default(8),
   USE_LOCAL_STORAGE: z
     .enum(["true", "false"])
     .or(z.boolean())

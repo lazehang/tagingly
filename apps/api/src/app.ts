@@ -8,6 +8,7 @@ import userRoutes from "./routes/users.js";
 import adminRoutes from "./routes/admin.js";
 import { verifyBlobToken } from "./lib/jwt.js";
 import { pipeObjectToResponse } from "./lib/storage.js";
+import { getPhotoQueueStats } from "./lib/photoQueue.js";
 
 export function createApp() {
   const env = loadEnv();
@@ -26,7 +27,15 @@ export function createApp() {
   app.use(express.json({ limit: "2mb" }));
 
   app.get("/health", (_req, res) => {
-    res.json({ ok: true });
+    const mem = process.memoryUsage();
+    res.json({
+      ok: true,
+      photoQueue: getPhotoQueueStats(),
+      memoryMb: {
+        rss: Math.round(mem.rss / 1024 / 1024),
+        heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+      },
+    });
   });
 
   app.get("/blobs", async (req, res, next) => {
