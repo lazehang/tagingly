@@ -181,7 +181,7 @@ Or `npm run build` at the root to run Turbo `build` for all packages that define
 **API**
 
 - `DATABASE_URL` — runtime DB URL. Local: direct `postgresql://…`. Production with [Prisma Accelerate](https://www.prisma.io/docs/accelerate): `prisma+postgres://accelerate.prisma-data.net/?api_key=…`
-- `DIRECT_URL` — direct `postgresql://…` (required for `prisma db push` / migrations when using Accelerate; locally, set the same value as `DATABASE_URL`)
+- `DIRECT_URL` (optional env var) — direct `postgresql://…` for `db push` / seed when `DATABASE_URL` is Accelerate: `DATABASE_URL="$DIRECT_URL" npx prisma db push`
 - `JWT_SECRET`, `WEAVIATE_URL` (and API key if needed)
 - `CORS_ORIGIN` — exact web origin (e.g. `https://app.example.com`), no trailing slash mismatch
 - B2 (or compatible S3) when not using local disk
@@ -223,7 +223,7 @@ The Dockerfile runs `npm run build -w api`, which uses `prisma generate --no-eng
 |----------|------------------|
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | Prisma Accelerate URL: `prisma+postgres://accelerate.prisma-data.net/?api_key=…` |
-| `DIRECT_URL` | Direct Postgres URL from your provider (Railway Postgres **Connect** tab → `DATABASE_URL` / `postgresql://…`) — used by Prisma CLI only |
+| `DIRECT_URL` (optional) | Direct Postgres URL for one-off `db push` / seed in shell (see below); not required for the running app |
 | `JWT_SECRET` | Long random secret |
 | `CORS_ORIGIN` | Your web app origin, e.g. `https://your-site.netlify.app` |
 | `WEAVIATE_URL`, `WEAVIATE_API_KEY` | Weaviate Cloud |
@@ -233,21 +233,21 @@ The Dockerfile runs `npm run build -w api`, which uses `prisma generate --no-eng
 
 **After first deploy**
 
-1. Open a **Railway shell** (or one-off job) with `DIRECT_URL` and run schema + seed against the direct DB:
+1. Open a **Railway shell** and run schema + seed using the **direct** Postgres URL (not Accelerate):
 
    ```bash
    cd apps/api
-   DATABASE_URL="$DIRECT_URL" npx prisma db push
-   DATABASE_URL="$DIRECT_URL" npm run db:seed
+   DATABASE_URL="postgresql://USER:PASS@HOST:PORT/railway" npx prisma db push
+   DATABASE_URL="postgresql://USER:PASS@HOST:PORT/railway" npm run db:seed
    ```
 
-   (`db push` / seed use the direct URL; the running app uses Accelerate via `DATABASE_URL`.)
+   Copy the URL from Railway Postgres → **Connect** → `DATABASE_URL`. The running app keeps `DATABASE_URL` as the Accelerate `prisma+postgres://…` URL.
 
 2. Confirm health: `GET https://<your-api>.up.railway.app/health` → `{"ok":true}`.
 
 3. Rotate any API keys that were ever committed or pasted in chat.
 
-**Local development** — keep `DATABASE_URL` and `DIRECT_URL` as the same `postgresql://photo:photo@localhost:5432/…` in `apps/api/.env`; run `npx prisma generate` (with engine) via `npm run db:generate` or `postinstall`, not `--no-engine`.
+**Local development** — use `postgresql://photo:photo@localhost:5432/…` for `DATABASE_URL` in `apps/api/.env`; run `npx prisma generate` (with engine) via `npm run db:generate` or `postinstall`, not `--no-engine`.
 
 ### Example: Vercel (web) + Fly.io (API)
 
