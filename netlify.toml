@@ -1,0 +1,11 @@
+# Web app in monorepo. publish must differ from base (@netlify/plugin-nextjs).
+[build]
+  base = "apps/web"
+  publish = ".next"
+  command = "cd ../.. && npm ci && npm run build --workspace=web"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
