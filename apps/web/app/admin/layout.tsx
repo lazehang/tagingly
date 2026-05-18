@@ -1,30 +1,32 @@
 import Link from "next/link";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { PLATFORM_NAME } from "@/lib/brand";
+import { adminNavItems } from "@/lib/dashboard-nav";
+import { auth } from "@/lib/auth";
+import { isSuperadmin } from "@/lib/roles";
 import { AdminSignOutButton } from "./admin-sign-out";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  const showUsers = isSuperadmin(session?.user?.role);
+
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-          <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
-            <Link href="/admin" className="text-foreground">
-              Events
-            </Link>
-            <Link
-              href="/"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Home
-            </Link>
-          </nav>
-          <AdminSignOutButton />
-        </div>
-      </header>
-      <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>
-    </div>
+    <DashboardShell
+      brand={<span className="brand-gradient-text">{PLATFORM_NAME}</span>}
+      brandHref="/admin"
+      navItems={adminNavItems(showUsers)}
+      actions={<AdminSignOutButton />}
+      sidebarFooter={
+        <Link href="/" className="hover:text-primary">
+          ← Back to site
+        </Link>
+      }
+    >
+      {children}
+    </DashboardShell>
   );
 }

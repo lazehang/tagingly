@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import multer from "multer";
 import bcrypt from "bcryptjs";
@@ -8,9 +7,8 @@ import { prisma } from "../lib/prisma.js";
 import { signAccessToken } from "../lib/jwt.js";
 import { toUserPublic } from "../lib/userDto.js";
 import { requireAuth } from "../middleware/auth.js";
-import { uploadObject } from "../lib/storage.js";
-import { descriptorFromSelfieImage } from "../lib/face.js";
-import { upsertSelfieEmbedding } from "../lib/weaviate.js";
+import { getSignedReadUrl } from "../lib/storage.js";
+import { createSelfiesFromRegistration, listUserSelfies } from "../lib/selfies.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -49,7 +47,10 @@ router.post("/login", async (req, res) => {
 
 router.post(
   "/register",
-  upload.fields([{ name: "selfie", maxCount: 1 }]),
+  upload.fields([
+    { name: "selfies", maxCount: 5 },
+    { name: "selfie", maxCount: 1 },
+  ]),
   async (req, res) => {
     const body = z
       .object({
@@ -64,10 +65,21 @@ router.post(
       return;
     }
 
-    const files = req.files as { selfie?: Express.Multer.File[] } | undefined;
-    const selfie = files?.selfie?.[0];
-    if (!selfie) {
-      res.status(400).json({ error: "Selfie required" });
+    const files = req.files as
+      | { selfies?: Express.Multer.File[]; selfie?: Express.Multer.File[] }
+      | undefined;
+    const selfieFiles =
+      files?.selfies?.length
+        ? files.selfies
+        : files?.selfie?.length
+          ? files.selfie
+          : [];
+    if (selfieFiles.length === 0) {
+      res.status(400).json({ error: "At least one selfie is required" });
+      return;
+    }
+    if (selfieFiles.length > 5) {
+      res.status(400).json({ error: "Maximum 5 selfies allowed" });
       return;
     }
 
@@ -87,26 +99,7 @@ router.post(
       return;
     }
 
-    let desc: Float32Array | null;
-    try {
-      desc = await descriptorFromSelfieImage(selfie.buffer);
-    } catch (e) {
-      console.error(e);
-      res.status(400).json({ error: "Could not process selfie image" });
-      return;
-    }
-    if (!desc) {
-      res.status(400).json({ error: "No face detected in selfie" });
-      return;
-    }
-
     const passwordHash = await bcrypt.hash(body.data.password, 10);
-    const storageKey = `events/${body.data.eventId}/selfies/${randomUUID()}.jpg`;
-    await uploadObject(
-      storageKey,
-      selfie.buffer,
-      selfie.mimetype || "image/jpeg"
-    );
 
     const user = await prisma.user.create({
       data: {
@@ -115,20 +108,28 @@ router.post(
         name: body.data.name,
         role: UserRole.USER,
         eventId: body.data.eventId,
-        selfieKey: storageKey,
       },
     });
 
     try {
-      await upsertSelfieEmbedding({
+      const primaryKey = await createSelfiesFromRegistration({
         userId: user.id,
         eventId: body.data.eventId,
-        vector: Array.from(desc),
+        files: selfieFiles,
+      });
+      if (!primaryKey) {
+        await prisma.user.delete({ where: { id: user.id } });
+        res.status(400).json({ error: "No face detected in any selfie" });
+        return;
+      }
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { selfieKey: primaryKey },
       });
     } catch (e) {
       console.error(e);
       await prisma.user.delete({ where: { id: user.id } });
-      res.status(500).json({ error: "Failed to index face embedding" });
+      res.status(500).json({ error: "Failed to index face embeddings" });
       return;
     }
 
@@ -137,19 +138,38 @@ router.post(
       role: user.role,
       eventId: user.eventId,
     });
-    res.status(201).json({ token, user: toUserPublic(user) });
+    const refreshed = await prisma.user.findUnique({ where: { id: user.id } });
+    res.status(201).json({ token, user: toUserPublic(refreshed!) });
   }
 );
 
 router.get("/me", requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.authUser!.sub },
+    include: { event: true },
   });
   if (!user) {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json({ user: toUserPublic(user) });
+  const dto = toUserPublic(user);
+  const selfies = await listUserSelfies(user.id);
+  res.json({
+    user: {
+      ...dto,
+      selfieUrl: user.selfieKey
+        ? await getSignedReadUrl(user.selfieKey)
+        : undefined,
+      selfies,
+    },
+    event: user.event
+      ? {
+          id: user.event.id,
+          name: user.event.name,
+          allowUserDownloads: user.event.allowUserDownloads,
+        }
+      : undefined,
+  });
 });
 
 export default router;

@@ -5,6 +5,7 @@ import { loadEnv } from "./env.js";
 import authRoutes from "./routes/auth.js";
 import eventRoutes from "./routes/events.js";
 import userRoutes from "./routes/users.js";
+import adminRoutes from "./routes/admin.js";
 import { verifyBlobToken } from "./lib/jwt.js";
 import { pipeObjectToResponse } from "./lib/storage.js";
 
@@ -46,6 +47,7 @@ export function createApp() {
   app.use("/auth", authRoutes);
   app.use("/events", eventRoutes);
   app.use("/users", userRoutes);
+  app.use("/admin", adminRoutes);
 
   app.use(
     (

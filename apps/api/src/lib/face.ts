@@ -2,6 +2,9 @@ import path from "node:path";
 import { existsSync, mkdirSync } from "node:fs";
 import { loadImage } from "canvas";
 
+import * as faceapi from "@vladmandic/face-api";
+import * as canvas from "canvas";
+
 const MODEL_FILES = [
   "ssd_mobilenetv1_model-weights_manifest.json",
   "ssd_mobilenetv1_model-shard1",
@@ -33,8 +36,6 @@ async function ensureModels(dir: string): Promise<void> {
 export async function initFaceApi(): Promise<void> {
   if (faceApiReady) return;
   await import("@tensorflow/tfjs-node");
-  const faceapi = await import("face-api.js");
-  const canvas = await import("canvas");
   faceapi.env.monkeyPatch({
     Canvas: canvas.Canvas as never,
     Image: canvas.Image as never,
@@ -52,7 +53,6 @@ export async function descriptorFromSelfieImage(
   buffer: Buffer
 ): Promise<Float32Array | null> {
   await initFaceApi();
-  const faceapi = await import("face-api.js");
   const img = await loadImage(buffer);
   const det = await faceapi
     .detectSingleFace(img as never)
@@ -63,13 +63,16 @@ export async function descriptorFromSelfieImage(
 
 export async function descriptorsFromEventPhoto(
   buffer: Buffer
-): Promise<Float32Array[]> {
+): Promise<Array<{ descriptor: Float32Array; faceArea: number; score: number }>> {
   await initFaceApi();
-  const faceapi = await import("face-api.js");
   const img = await loadImage(buffer);
   const dets = await faceapi
     .detectAllFaces(img as never)
     .withFaceLandmarks()
     .withFaceDescriptors();
-  return dets.map((d) => d.descriptor);
+  return dets.map((d) => ({
+    descriptor: d.descriptor,
+    faceArea: Math.max(0, d.detection.box.width * d.detection.box.height),
+    score: d.detection.score ?? 0,
+  }));
 }

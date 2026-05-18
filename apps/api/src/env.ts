@@ -9,6 +9,11 @@ const envSchema = z.object({
   SIGNED_URL_TTL_SECONDS: z.coerce.number().default(3600),
   WEAVIATE_URL: z.string().url().default("http://localhost:8080"),
   WEAVIATE_API_KEY: z.string().optional(),
+  MATCH_MIN_CERTAINTY: z.coerce.number().default(0.78),
+  MATCH_MIN_MARGIN: z.coerce.number().default(0.16),
+  MATCH_MIN_FACE_AREA: z.coerce.number().default(80 * 80),
+  MATCH_MIN_DETECTION_SCORE: z.coerce.number().default(0.85),
+  MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE: z.coerce.number().default(0.86),
   USE_LOCAL_STORAGE: z
     .enum(["true", "false"])
     .or(z.boolean())

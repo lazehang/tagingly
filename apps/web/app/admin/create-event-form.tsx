@@ -35,15 +35,20 @@ export function AdminCreateEventForm() {
       setMsg("Could not create event.");
       return;
     }
+    const data = (await res.json()) as { event?: { id: string } };
     setName("");
     setDate("");
-    router.refresh();
+    if (data.event?.id) {
+      router.push(`/admin/events/${data.event.id}`);
+      return;
+    }
+    router.push("/admin/events");
   }
 
   return (
     <form
       onSubmit={onSubmit}
-      className="flex max-w-xl flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end"
+      className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
     >
       <div className="min-w-[200px] flex-1 space-y-1">
         <label className="text-xs font-medium text-muted-foreground" htmlFor="ev-name">

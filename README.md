@@ -2,7 +2,7 @@
 
 Monorepo for an event photo platform: organizers create events and upload crowd photos; attendees register with a selfie; the API detects faces, matches them to embeddings in **Weaviate**, and stores originals in **local disk** or **Backblaze B2**. Attendees see a gallery of shots they appear in via signed URLs.
 
-Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **face-api.js** + **TensorFlow.js Node**, and **Auth.js** (NextAuth v5) for credentials-based sign-in.
+Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **@vladmandic/face-api** + **TensorFlow.js Node**, and **Auth.js** (NextAuth v5) for credentials-based sign-in.
 
 ## Requirements
 
@@ -20,7 +20,7 @@ Optional for production uploads: a **Backblaze B2** bucket and S3-compatible cre
 | [`apps/api`](apps/api) | Express API: auth, events, uploads, face pipeline, Weaviate, storage |
 | [`packages/types`](packages/types) | Shared TypeScript DTOs for API and web |
 | [`packages/ui`](packages/ui) | Shared React primitives (buttons, cards, inputs, modal) |
-| [`packages/tailwind-config`](packages/tailwind-config) | Shared Tailwind preset and CSS variables |
+| [`packages/tailwind-config`](packages/tailwind-config) | Shared Tailwind preset; **theme** in [`theme.css`](packages/tailwind-config/theme.css) |
 | [`packages/eslint-config`](packages/eslint-config), [`packages/typescript-config`](packages/typescript-config) | Lint and TS bases |
 
 ## Quick start
@@ -87,10 +87,11 @@ Optional for production uploads: a **Backblaze B2** bucket and S3-compatible cre
 
 ## End-to-end workflow
 
-1. **Admin** creates an event and shares its **event ID** (or the registration link from the dashboard).
-2. **Attendees** open **Register**, enter the event ID, name, email, password, and a clear **selfie**. The API stores the image, extracts a face embedding, and upserts it into Weaviate scoped by `eventId`.
-3. **Admin** uploads **event photos** for that event. Each image is stored, then processed asynchronously: faces are detected, embeddings queried against Weaviate (selfies for the same event), and matching user IDs are written to `Photo.taggedUserIds`.
-4. **Attendees** sign in and open **Portal** to see **tagged photos** (signed URLs; local mode uses JWT-backed `/blobs` on the API).
+1. **Admin** creates an event and shares its **event ID** (or the registration link from the dashboard). Optionally enable **Allow users to download photos** in event settings.
+2. **Attendees** open **Register**, enter the event ID, name, email, password, and **1–5 selfies**. Each image is stored, face-embedded, and indexed in Weaviate for that `eventId`.
+3. **Admin** uploads **event photos**. Processing writes **proposed** tags with match scores; stricter thresholds reduce false positives.
+4. **Admin** opens a photo to **review tags by name/email**: confirm or reject each proposed tag, remove confirmed tags, or **search and add** users manually. Rejected/removed tags are stored as **exclusions** so reprocessing will not re-suggest them.
+5. **Attendees** sign in to **Portal**: carousel of confirmed photos, **“Not me”** to remove a bad tag (also recorded as exclusion), optional **download** when the admin enabled it, and **profile** to add/remove selfies (up to 5).
 
 ## Environment variables
 
@@ -103,6 +104,12 @@ See [`.env.example`](.env.example) for the full list. Summary:
 - Storage: `USE_LOCAL_STORAGE=true` **or** B2 (`B2_*`, `B2_ENDPOINT`, etc.)
 - `API_PUBLIC_URL` — optional; base URL embedded in local signed blob links (defaults to `http://localhost:${PORT}`)
 - `SIGNED_URL_TTL_SECONDS`
+- Matching policy (false-positive minimizing):
+  - `MATCH_MIN_CERTAINTY` (default `0.78`)
+  - `MATCH_MIN_MARGIN` (default `0.16`)
+  - `MATCH_MIN_FACE_AREA` (default `6400`)
+  - `MATCH_MIN_DETECTION_SCORE` (default `0.85`)
+  - `MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE` (default `0.86`)
 
 **Web (`apps/web/.env.local`)**
 
@@ -199,7 +206,7 @@ Exact clicks differ per provider; the invariants are **public API URL**, **match
 
 ## Face recognition and native dependencies
 
-The API uses **@tensorflow/tfjs-node**, **face-api.js**, and **canvas**. On macOS you may need [system deps for `canvas`](https://github.com/Automattic/node-canvas#compiling); first run downloads model weights into `apps/api/face-models/` (gitignored).
+The API uses **@tensorflow/tfjs-node**, **@vladmandic/face-api**, and **canvas**. On macOS you may need [system deps for `canvas`](https://github.com/Automattic/node-canvas#compiling); first run downloads model weights into `apps/api/face-models/` (gitignored).
 
 If initialization fails, photo processing falls back to marking photos as failed; check API logs.
 

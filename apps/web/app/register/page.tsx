@@ -60,14 +60,21 @@ function RegisterForm() {
     fd.append("name", name);
     fd.append("email", email);
     fd.append("password", password);
-    const selfieInput = (document.getElementById("selfie") as HTMLInputElement)
-      ?.files?.[0];
-    if (!selfieInput) {
-      setError("Please choose a selfie photo.");
+    const selfieInput = document.getElementById("selfies") as HTMLInputElement;
+    const files = selfieInput?.files;
+    if (!files?.length) {
+      setError("Please choose at least one selfie photo.");
       setLoading(false);
       return;
     }
-    fd.append("selfie", selfieInput);
+    if (files.length > 5) {
+      setError("Maximum 5 selfies allowed.");
+      setLoading(false);
+      return;
+    }
+    for (let i = 0; i < files.length; i++) {
+      fd.append("selfies", files[i]!);
+    }
 
     const res = await fetch(`${publicApiBase()}/auth/register`, {
       method: "POST",
@@ -99,8 +106,8 @@ function RegisterForm() {
       <CardHeader>
         <CardTitle>Register</CardTitle>
         <CardDescription>
-          Join an event with your name and a clear selfie so we can find you in
-          photos.
+          Join an event with your name and one or more clear selfies so we can
+          find you in photos.
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
@@ -170,10 +177,19 @@ function RegisterForm() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="selfie">
-              Selfie
+            <label className="text-sm font-medium" htmlFor="selfies">
+              Selfies (1–5)
             </label>
-            <Input id="selfie" type="file" accept="image/*" required />
+            <Input
+              id="selfies"
+              type="file"
+              accept="image/*"
+              multiple
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Add multiple angles or lighting for better matching.
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -191,7 +207,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <main className="page-shell flex items-center justify-center p-4">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <RegisterForm />
       </Suspense>

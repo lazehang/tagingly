@@ -1,9 +1,11 @@
 import jwt from "jsonwebtoken";
 import { loadEnv } from "../env.js";
+import { normalizeUserRole } from "./roles.js";
+import type { UserRole } from "@prisma/client";
 
 export type AccessPayload = {
   sub: string;
-  role: "ADMIN" | "USER";
+  role: UserRole;
   eventId: string | null;
 };
 
@@ -23,13 +25,13 @@ export function verifyAccessToken(token: string): AccessPayload {
   const { JWT_SECRET } = loadEnv();
   const decoded = jwt.verify(token, JWT_SECRET, {
     complete: false,
-  }) as jwt.JwtPayload & { role: "ADMIN" | "USER"; eventId: string | null };
+  }) as jwt.JwtPayload & { role: string; eventId: string | null };
   if (!decoded.sub) {
     throw new Error("Invalid token");
   }
   return {
     sub: decoded.sub,
-    role: decoded.role,
+    role: normalizeUserRole(decoded.role),
     eventId: decoded.eventId ?? null,
   };
 }

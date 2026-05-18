@@ -2,8 +2,8 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { getSession, signIn } from "next-auth/react";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import {
@@ -14,11 +14,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/card";
+import { postLoginPath } from "@/lib/post-login";
+import type { UserRole } from "@repo/types";
+
+async function sessionAfterSignIn() {
+  for (let i = 0; i < 5; i++) {
+    const session = await getSession();
+    if (session?.user?.role) {
+      return session;
+    }
+    await new Promise((r) => setTimeout(r, 50 * (i + 1)));
+  }
+  return getSession();
+}
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/portal";
+  const nextParam = searchParams.get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,18 +40,26 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
     const res = await signIn("credentials", {
       email,
       password,
       redirect: false,
     });
-    setLoading(false);
+
     if (res?.error) {
+      setLoading(false);
       setError("Invalid email or password.");
       return;
     }
-    router.push(next);
-    router.refresh();
+
+    const session = await sessionAfterSignIn();
+    const role = session?.user?.role as UserRole | undefined;
+    const destination = postLoginPath(role, nextParam);
+
+    setLoading(false);
+    // Full navigation so middleware sees the session cookie + role.
+    window.location.assign(destination);
   }
 
   return (
@@ -47,7 +67,7 @@ function LoginForm() {
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-          Use the email and password for your admin or attendee account.
+          Organizers (admin) go to the dashboard; attendees go to their gallery.
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
@@ -58,7 +78,7 @@ function LoginForm() {
             </p>
           ) : null}
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="email">
+            <label className="form-label" htmlFor="email">
               Email
             </label>
             <Input
@@ -71,7 +91,7 @@ function LoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="password">
+            <label className="form-label" htmlFor="password">
               Password
             </label>
             <Input
@@ -99,7 +119,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <main className="page-shell flex items-center justify-center p-4">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <LoginForm />
       </Suspense>

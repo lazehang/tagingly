@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import type { UserPublicDto } from "@repo/types";
+import type { UserPublicDto, UserRole } from "@repo/types";
+import { normalizeUserRole } from "@/lib/roles";
 import type { JWT } from "@auth/core/jwt";
 import type { Session, User } from "@auth/core/types";
 
@@ -12,7 +13,7 @@ const apiBase = (
 
 type UserJWT = User & {
   accessToken?: string;
-  role: "ADMIN" | "USER";
+  role: UserRole;
   eventId: string | null;
 };
 
@@ -46,7 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: data.user.id,
           email: data.user.email,
           name: data.user.name,
-          role: data.user.role,
+          role: normalizeUserRole(data.user.role),
           eventId: data.user.eventId,
           accessToken: data.token,
         };
@@ -72,7 +73,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.role = (token.role as "ADMIN" | "USER") ?? "USER";
+        session.user.role = normalizeUserRole(
+          token.role as string | undefined
+        );
         session.user.eventId = (token.eventId as string | null) ?? null;
       }
       session.accessToken =

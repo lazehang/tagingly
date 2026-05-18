@@ -19,7 +19,7 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
       headers: { Authorization: `Bearer ${session?.accessToken ?? ""}` },
     });
     setLoading(false);
-    router.push("/admin");
+    router.push("/admin/events");
     router.refresh();
   }
 

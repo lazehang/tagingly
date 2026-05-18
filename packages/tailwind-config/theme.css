@@ -1,0 +1,84 @@
+/**
+ * Single source of truth for app theming.
+ *
+ * Brand palette:
+ *   #2F2FE4 — primary (bright indigo)
+ *   #162E93 — accent (deep blue)
+ *   #1A1953 — elevated surfaces
+ *   #080616 — background
+ */
+
+:root {
+  /* Brand */
+  --primary: 240 77% 54%; /* #2F2FE4 */
+  --primary-foreground: 0 0% 100%;
+
+  --accent-brand: 228 74% 33%; /* #162E93 */
+  --accent-brand-foreground: 0 0% 100%;
+
+  --neon-highlight: 240 85% 68%; /* lighter #2F2FE4 for gradients */
+
+  /* Surfaces */
+  --background: 248 57% 5%; /* #080616 */
+  --foreground: 228 40% 96%;
+  --card: 241 54% 21%; /* #1A1953 */
+  --card-foreground: 228 35% 96%;
+  --popover: 241 54% 21%;
+  --popover-foreground: 228 35% 96%;
+
+  /* Secondary / muted */
+  --secondary: 241 45% 16%;
+  --secondary-foreground: 228 30% 94%;
+  --muted: 241 40% 14%;
+  --muted-foreground: 228 25% 65%;
+  --accent: 228 55% 18%; /* tinted from #162E93 */
+  --accent-foreground: 240 80% 78%;
+
+  /* Semantic */
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 165 60% 40%;
+  --success-foreground: 248 57% 5%;
+
+  /* Chrome */
+  --border: 228 45% 28%;
+  --input: 241 40% 18%;
+  --ring: 240 77% 54%;
+
+  /* Glass morphism */
+  --glass-bg: 241 54% 21%;
+  --glass-border: 240 77% 54%;
+  --glass-opacity: 0.58;
+  --glass-blur: 18px;
+
+  /* Marketing backdrop */
+  --marketing-bg-start: 248 57% 5%; /* #080616 */
+  --marketing-bg-mid: 241 54% 21%; /* #1A1953 */
+  --marketing-bg-end: 228 74% 33%; /* #162E93 */
+
+  /* Glow */
+  --glow-primary: 240 77% 54%;
+  --glow-accent: 228 74% 33%;
+  --glow-deep: 241 54% 21%;
+
+  /* Layout */
+  --radius: 0.75rem;
+  --header-height: 3.5rem;
+  --content-max-width: 72rem;
+
+  /* Typography */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px 0 hsl(248 57% 3% / 0.6);
+  --shadow-md:
+    0 4px 20px -2px hsl(var(--glow-primary) / 0.15),
+    0 8px 24px -4px hsl(248 57% 3% / 0.65);
+  --shadow-lg:
+    0 0 32px -8px hsl(var(--glow-primary) / 0.22),
+    0 20px 40px -8px hsl(248 57% 3% / 0.7);
+
+  color-scheme: dark;
+}

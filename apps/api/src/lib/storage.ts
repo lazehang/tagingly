@@ -83,6 +83,27 @@ export async function getObjectBuffer(storageKey: string): Promise<Buffer> {
   return Buffer.from(bytes);
 }
 
+function mimeForKey(storageKey: string): string {
+  const ext = storageKey.split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "gif") return "image/gif";
+  return "image/jpeg";
+}
+
+export async function pipeObjectAsAttachment(
+  storageKey: string,
+  res: Response,
+  filename: string
+): Promise<void> {
+  res.setHeader("Content-Type", mimeForKey(storageKey));
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${filename.replace(/"/g, "")}"`
+  );
+  await pipeObjectToResponse(storageKey, res);
+}
+
 export async function pipeObjectToResponse(
   storageKey: string,
   res: Response

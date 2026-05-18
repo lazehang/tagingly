@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { Session } from "@auth/core/types";
 import { auth } from "@/lib/auth";
+import { isStaff, isSuperadmin, normalizeUserRole } from "@/lib/roles";
 
 export default auth((req: NextRequest & { auth: Session | null }) => {
   const path = req.nextUrl.pathname;
-  const role = req.auth?.user?.role;
+  const role = normalizeUserRole(req.auth?.user?.role);
   const loggedIn = !!req.auth;
 
   if (path.startsWith("/admin")) {
@@ -14,8 +15,11 @@ export default auth((req: NextRequest & { auth: Session | null }) => {
       url.searchParams.set("next", path);
       return NextResponse.redirect(url);
     }
-    if (role !== "ADMIN") {
+    if (!isStaff(role)) {
       return NextResponse.redirect(new URL("/portal", req.nextUrl.origin));
+    }
+    if (path.startsWith("/admin/users") && !isSuperadmin(role)) {
+      return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
     }
   }
 

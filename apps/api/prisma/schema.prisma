@@ -8,8 +8,14 @@ datasource db {
 }
 
 enum UserRole {
-  ADMIN
+  SUPERADMIN
+  ORGANIZER
   USER
+}
+
+enum EventOrganizerRole {
+  OWNER
+  ORGANIZER
 }
 
 enum PhotoStatus {
@@ -18,36 +24,93 @@ enum PhotoStatus {
   FAILED
 }
 
+enum TagExclusionReason {
+  ADMIN_REJECT_PROPOSED
+  ADMIN_REMOVE_CONFIRMED
+  USER_REMOVE_SELF
+}
+
 model Event {
-  id        String   @id @default(cuid())
-  name      String
-  date      DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
-  photos    Photo[]
+  id                 String           @id @default(cuid())
+  name               String
+  date               DateTime
+  allowUserDownloads Boolean          @default(false)
+  createdById        String?
+  createdBy          User?            @relation("EventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  users              User[]
+  photos             Photo[]
+  organizers         EventOrganizer[]
+}
+
+model EventOrganizer {
+  id        String             @id @default(cuid())
+  eventId   String
+  event     Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      EventOrganizerRole
+  createdAt DateTime           @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId])
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role         UserRole @default(USER)
-  eventId      String?
-  event        Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  selfieKey    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                   String           @id @default(cuid())
+  email                String           @unique
+  passwordHash         String
+  name                 String
+  role                 UserRole         @default(USER)
+  eventId              String?
+  event                Event?           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  selfieKey            String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  selfies              UserSelfie[]
+  tagExclusions        TagExclusion[]   @relation("TagExclusionUser")
+  tagExclusionsCreated TagExclusion[]   @relation("TagExclusionCreatedBy")
+  createdEvents        Event[]          @relation("EventCreator")
+  eventOrganizers      EventOrganizer[]
+}
+
+model UserSelfie {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storageKey String
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Photo {
-  id            String      @id @default(cuid())
-  eventId       String
-  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  storageKey    String
-  taggedUserIds String[]    @default([])
-  status        PhotoStatus @default(PENDING)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String         @id @default(cuid())
+  eventId           String
+  event             Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  storageKey        String
+  proposedUserIds   String[]       @default([])
+  confirmedUserIds  String[]       @default([])
+  proposedMatchMeta Json?
+  status            PhotoStatus    @default(PENDING)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  tagExclusions     TagExclusion[]
+}
+
+model TagExclusion {
+  id              String             @id @default(cuid())
+  photoId         String
+  photo           Photo              @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User               @relation("TagExclusionUser", fields: [userId], references: [id], onDelete: Cascade)
+  reason          TagExclusionReason
+  createdByUserId String
+  createdBy       User               @relation("TagExclusionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime           @default(now())
+
+  @@unique([photoId, userId])
+  @@index([photoId])
+  @@index([userId])
 }

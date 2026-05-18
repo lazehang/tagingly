@@ -75,17 +75,14 @@ export async function ensureWeaviateSchema(): Promise<void> {
   }
 }
 
-export async function upsertSelfieEmbedding(args: {
+export async function addSelfieEmbedding(args: {
   userId: string;
   eventId: string;
+  selfieKey: string;
   vector: number[];
 }): Promise<void> {
   const env = loadEnv();
-  const id = uuidv5(`${args.userId}-selfie`, NAMESPACE);
-  await fetch(`${env.WEAVIATE_URL}/v1/objects/${id}?class=${FACE_CLASS}`, {
-    method: "DELETE",
-    headers: headers(),
-  }).catch(() => undefined);
+  const id = uuidv5(`${args.userId}-${args.selfieKey}`, NAMESPACE);
 
   const res = await fetch(`${env.WEAVIATE_URL}/v1/objects`, {
     method: "POST",
@@ -97,7 +94,7 @@ export async function upsertSelfieEmbedding(args: {
         userId: args.userId,
         eventId: args.eventId,
         source: "selfie",
-        photoId: "",
+        photoId: args.selfieKey,
         faceIndex: 0,
       },
       vector: args.vector,
@@ -106,6 +103,18 @@ export async function upsertSelfieEmbedding(args: {
   if (!res.ok) {
     throw new Error(`Weaviate insert: ${await res.text()}`);
   }
+}
+
+export async function deleteSelfieEmbeddingByKey(
+  userId: string,
+  selfieKey: string
+): Promise<void> {
+  const id = uuidv5(`${userId}-${selfieKey}`, NAMESPACE);
+  const env = loadEnv();
+  await fetch(
+    `${env.WEAVIATE_URL}/v1/objects/${id}?class=${FACE_CLASS}`,
+    { method: "DELETE", headers: headers() }
+  );
 }
 
 export async function deleteSelfieEmbeddings(userId: string): Promise<void> {
@@ -146,7 +155,7 @@ export async function matchUsersByFace(args: {
   eventId: string;
   limit?: number;
   minCertainty?: number;
-}): Promise<string[]> {
+}): Promise<Array<{ userId: string; certainty: number }>> {
   const limit = args.limit ?? 8;
   const minCertainty = args.minCertainty ?? 0.55;
   const vectorJson = JSON.stringify(args.vector);
@@ -176,14 +185,12 @@ export async function matchUsersByFace(args: {
     throw new Error(data.errors.map((e) => e.message).join("; "));
   }
   const rows = data.data?.Get?.[FACE_CLASS] ?? [];
-  const seen = new Set<string>();
-  const out: string[] = [];
+  const out: Array<{ userId: string; certainty: number }> = [];
   for (const r of rows) {
     const uid = r.userId;
-    if (uid && !seen.has(uid)) {
-      seen.add(uid);
-      out.push(uid);
-    }
+    const certainty = r._additional?.certainty;
+    if (!uid || typeof certainty !== "number") continue;
+    out.push({ userId: uid, certainty });
   }
   return out;
 }
