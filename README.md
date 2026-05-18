@@ -1,6 +1,6 @@
-# Photo Tagging AI
+# Tagingly
 
-Monorepo for an event photo platform: organizers create events and upload crowd photos; attendees register with a selfie; the API detects faces, matches them to embeddings in **Weaviate**, and stores originals in **local disk** or **Backblaze B2**. Attendees see a gallery of shots they appear in via signed URLs.
+**Tagingly** is an AI-powered event photo platform (this monorepo): organizers create events and upload crowd photos; attendees register from a shareable event page with selfies; the API detects faces, matches them to embeddings in **Weaviate**, and stores originals on **local disk** or **Backblaze B2**. Attendees see a gallery of shots they appear in via signed URLs.
 
 Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **@vladmandic/face-api** + **TensorFlow.js Node**, and **Auth.js** (NextAuth v5) for credentials-based sign-in.
 
@@ -63,7 +63,7 @@ Optional for production uploads: a **Backblaze B2** bucket and S3-compatible cre
    Minimum variables:
 
    - `AUTH_SECRET` — required by Auth.js (or use `NEXTAUTH_SECRET`)
-   - `NEXTAUTH_URL=http://localhost:3000`
+   - `NEXTAUTH_URL=http://localhost:3001`
    - `API_URL=http://localhost:4000` — server-side calls to the API
    - `NEXT_PUBLIC_API_URL=http://localhost:4000` — browser calls to the API
 
@@ -83,12 +83,12 @@ Optional for production uploads: a **Backblaze B2** bucket and S3-compatible cre
    npm run dev
    ```
 
-7. Open [http://localhost:3000](http://localhost:3000). Sign in as admin at `/login`, create an event, copy its ID for `/register?eventId=…`, then upload photos under **Admin → Manage** for that event.
+7. Open [http://localhost:3001](http://localhost:3001). Sign in as admin at `/login`, create an event, copy the **registration page** link from the event dashboard (`/e/{eventId}`), then upload photos under **Admin → Events** for that event.
 
 ## End-to-end workflow
 
-1. **Admin** creates an event and shares its **event ID** (or the registration link from the dashboard). Optionally enable **Allow users to download photos** in event settings.
-2. **Attendees** open **Register**, enter the event ID, name, email, password, and **1–5 selfies**. Each image is stored, face-embedded, and indexed in Weaviate for that `eventId`.
+1. **Organizer** creates an event in Tagingly and shares the **registration page** link (`/e/{eventId}`) from the event dashboard. Optionally enable **Allow users to download photos** in event settings.
+2. **Attendees** open that link, enter name, email, password, and **1–5 selfies** (no event ID to type). Each image is stored, face-embedded, and indexed in Weaviate for that event.
 3. **Admin** uploads **event photos**. Processing writes **proposed** tags with match scores; stricter thresholds reduce false positives.
 4. **Admin** opens a photo to **review tags by name/email**: confirm or reject each proposed tag, remove confirmed tags, or **search and add** users manually. Rejected/removed tags are stored as **exclusions** so reprocessing will not re-suggest them.
 5. **Attendees** sign in to **Portal**: carousel of confirmed photos, **“Not me”** to remove a bad tag (also recorded as exclusion), optional **download** when the admin enabled it, and **profile** to add/remove selfies (up to 5).
@@ -136,7 +136,7 @@ OAuth providers are not wired to the Express API in the default setup; sign-in i
 
 **Web workspace**
 
-- `npm run dev --workspace=web` — Next.js on port 3000
+- `npm run dev --workspace=web` — Next.js on port 3001
 
 ## Docker
 
@@ -180,7 +180,9 @@ Or `npm run build` at the root to run Turbo `build` for all packages that define
 
 **API**
 
-- `DATABASE_URL`, `JWT_SECRET`, `WEAVIATE_URL` (and API key if needed)
+- `DATABASE_URL` — runtime DB URL. Local: direct `postgresql://…`. Production with [Prisma Accelerate](https://www.prisma.io/docs/accelerate): `prisma+postgres://accelerate.prisma-data.net/?api_key=…`
+- `DIRECT_URL` — direct `postgresql://…` (required for `prisma db push` / migrations when using Accelerate; locally, set the same value as `DATABASE_URL`)
+- `JWT_SECRET`, `WEAVIATE_URL` (and API key if needed)
 - `CORS_ORIGIN` — exact web origin (e.g. `https://app.example.com`), no trailing slash mismatch
 - B2 (or compatible S3) when not using local disk
 - `API_PUBLIC_URL` — **public base URL of this API** so JWT blob links in local-storage mode point somewhere valid; with B2, presigned URLs are generated instead
@@ -194,6 +196,58 @@ Or `npm run build` at the root to run Turbo `build` for all packages that define
 4. **Admin bootstrap** — run `db:seed` once in the deployment environment (or create admin via a one-off job); change default passwords immediately.
 5. **Face pipeline** — the API is CPU-heavy during uploads; size instances accordingly (or queue processing in a worker later).
 6. **Scaling the API** — multiple replicas are safe for HTTP **if** storage is **B2** (or shared object storage) and not local disk; Weaviate and Postgres are shared across instances.
+
+### Example: Vercel (web) + Railway (API)
+
+1. Create Postgres (e.g. Railway Postgres or Neon), enable **Prisma Accelerate** on that database in [Prisma Data Platform](https://console.prisma.io/), and provision Weaviate Cloud + B2.
+2. In **Railway**, create a service for the API from this repo (Dockerfile path `apps/api/Dockerfile`, build context = repo root — see below).
+3. Set API variables (see **Railway (API service)** below). Deploy and copy the public API URL (`https://….up.railway.app`).
+4. Deploy **web** (e.g. Netlify) with `NEXT_PUBLIC_API_URL` / `API_URL` pointing at the Railway API URL; set API `CORS_ORIGIN` to the web origin.
+
+### Railway (API service)
+
+**Build (monorepo root as context)**
+
+| Setting | Value |
+|---------|--------|
+| Dockerfile | `apps/api/Dockerfile` |
+| Root / context | repository root (`.` ) |
+
+The Dockerfile runs `npm run build -w api`, which uses `prisma generate --no-engine` for Accelerate.
+
+**Start command** (if not using the Dockerfile `CMD`): `npm run start --workspace=api` from repo root, or `node dist/index.js` with working directory `apps/api` after build.
+
+**Required variables**
+
+| Variable | Production value |
+|----------|------------------|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Prisma Accelerate URL: `prisma+postgres://accelerate.prisma-data.net/?api_key=…` |
+| `DIRECT_URL` | Direct Postgres URL from your provider (Railway Postgres **Connect** tab → `DATABASE_URL` / `postgresql://…`) — used by Prisma CLI only |
+| `JWT_SECRET` | Long random secret |
+| `CORS_ORIGIN` | Your web app origin, e.g. `https://your-site.netlify.app` |
+| `WEAVIATE_URL`, `WEAVIATE_API_KEY` | Weaviate Cloud |
+| `USE_LOCAL_STORAGE` | `false` |
+| `B2_*` | Backblaze B2 S3 credentials |
+| `PORT` | Railway sets this automatically |
+
+**After first deploy**
+
+1. Open a **Railway shell** (or one-off job) with `DIRECT_URL` and run schema + seed against the direct DB:
+
+   ```bash
+   cd apps/api
+   DATABASE_URL="$DIRECT_URL" npx prisma db push
+   DATABASE_URL="$DIRECT_URL" npm run db:seed
+   ```
+
+   (`db push` / seed use the direct URL; the running app uses Accelerate via `DATABASE_URL`.)
+
+2. Confirm health: `GET https://<your-api>.up.railway.app/health` → `{"ok":true}`.
+
+3. Rotate any API keys that were ever committed or pasted in chat.
+
+**Local development** — keep `DATABASE_URL` and `DIRECT_URL` as the same `postgresql://photo:photo@localhost:5432/…` in `apps/api/.env`; run `npx prisma generate` (with engine) via `npm run db:generate` or `postinstall`, not `--no-engine`.
 
 ### Example: Vercel (web) + Fly.io (API)
 
@@ -212,7 +266,8 @@ If initialization fails, photo processing falls back to marking photos as failed
 
 ## Troubleshooting
 
-- **CORS errors** — set `CORS_ORIGIN` on the API to the exact web origin (e.g. `http://localhost:3000`).
+- **CORS errors** — set `CORS_ORIGIN` on the API to the exact web origin (e.g. `http://localhost:3001`).
+- **Prisma P6001 (`prisma://` URL required)** — regenerate the client with the query engine: `cd apps/api && npx prisma generate`. Local dev should use `postgresql://…` in `DATABASE_URL`, not Accelerate, unless you configure Accelerate intentionally.
 - **Weaviate errors** — ensure Compose is up and `WEAVIATE_URL` matches; the API creates the `FaceEmbedding` class on startup.
 - **NextAuth / “not callable”** — do not add a file named `next-auth.d.ts` at the web app root; it can shadow the real `next-auth` package. Session/JWT extensions live under [`apps/web/types/`](apps/web/types/).
 - **TypeScript “ambiguous project root” in `@repo/ui`** — `packages/ui/tsconfig.json` sets `rootDir: "src"`.

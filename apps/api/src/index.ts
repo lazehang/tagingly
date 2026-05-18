@@ -1,4 +1,9 @@
+import { config } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadEnv } from "./env.js";
+
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../.env") });
 import { createApp } from "./app.js";
 import { ensureWeaviateSchema } from "./lib/weaviate.js";
 

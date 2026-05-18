@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EventShareLink } from "@/components/event/event-share-link";
 import { DashboardSubNav } from "@/components/dashboard/dashboard-nav";
 import { serverApiFetch } from "@/lib/server-api";
 import { eventSubNavItems } from "@/lib/dashboard-nav";
@@ -34,6 +35,8 @@ export default async function AdminEventLayout({
           <Link href="/admin/events">← All events</Link>
         </Button>
       </div>
+
+      <EventShareLink eventId={eventId} className="section-card p-4" />
 
       <DashboardSubNav items={eventSubNavItems(eventId)} />
 

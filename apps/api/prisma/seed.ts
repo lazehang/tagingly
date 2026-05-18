@@ -1,7 +1,8 @@
-import { PrismaClient, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { createPrismaClient } from "../src/lib/prisma.js";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const email = process.env["ADMIN_EMAIL"] ?? "admin@example.com";

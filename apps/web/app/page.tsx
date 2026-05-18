@@ -134,7 +134,7 @@ const faqs = [
   },
   {
     q: "Do I need an event ID to register?",
-    a: "Yes. Organizers share an event ID or registration link after they create the event. You will need that code when you sign up.",
+    a: "No. Organizers share a registration link for your event. Open that page, add your details and selfies, and you are set—no codes to type.",
   },
   {
     q: "Can organizers download photos for everyone?",
@@ -293,7 +293,7 @@ export default function HomePage() {
                   <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
                     <li className="flex gap-2">
                       <span className="font-bold text-primary">✓</span>
-                      Register with your event ID and up to five selfies
+                      Register from your organizer&apos;s link with up to five selfies
                     </li>
                     <li className="flex gap-2">
                       <span className="font-bold text-primary">✓</span>

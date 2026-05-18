@@ -2,6 +2,7 @@ import Link from "next/link";
 import { QuickLinkCard } from "@/components/dashboard/quick-link-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { serverApiFetch } from "@/lib/server-api";
+import { eventLandingPath } from "@/lib/event-urls";
 import type { EventDto, PhotoDto } from "@repo/types";
 import { Button } from "@repo/ui/button";
 
@@ -69,14 +70,11 @@ export default async function AdminEventOverviewPage({
             title="Event settings"
             description="Downloads, reprocess matching, and preferences."
           />
-          <div className="section-card flex flex-col justify-center gap-2 p-4">
-            <p className="text-sm font-medium">Registration</p>
-            <Button variant="outline" size="sm" asChild className="w-fit">
-              <Link href={`/register?eventId=${eventId}`}>
-                Open registration link
-              </Link>
-            </Button>
-          </div>
+          <QuickLinkCard
+            href={eventLandingPath(eventId)}
+            title="Registration page"
+            description="Preview the public page attendees use to sign up."
+          />
         </div>
       </section>
     </div>

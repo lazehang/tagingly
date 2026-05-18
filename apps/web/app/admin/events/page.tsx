@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/app-shell";
+import { eventLandingPath } from "@/lib/event-urls";
 import { serverApiFetch } from "@/lib/server-api";
 import { DeleteEventButton } from "../delete-event-button";
 import type { EventDto } from "@repo/types";
@@ -27,7 +28,7 @@ export default async function AdminEventsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Events"
-        description="Create an event, share its ID for registration, then upload and review crowd photos."
+        description="Create an event, share its registration link with attendees, then upload and review crowd photos."
         actions={
           <Button asChild size="sm">
             <Link href="/admin/events/new">Create event</Link>
@@ -44,9 +45,6 @@ export default async function AdminEventsPage() {
                 <CardDescription>
                   {new Date(e.date).toLocaleString()}
                 </CardDescription>
-                <p className="font-mono text-xs text-muted-foreground">
-                  ID: {e.id}
-                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" asChild>
@@ -60,8 +58,8 @@ export default async function AdminEventsPage() {
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4 border-t border-border/60 pt-4">
               <Button variant="link" className="h-auto px-0" asChild>
-                <Link href={`/register?eventId=${e.id}`}>
-                  Registration link
+                <Link href={eventLandingPath(e.id)} target="_blank" rel="noopener">
+                  Registration page
                 </Link>
               </Button>
               <Button variant="link" className="h-auto px-0" asChild>
