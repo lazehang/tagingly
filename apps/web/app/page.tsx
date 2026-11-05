@@ -10,28 +10,25 @@ import { PLATFORM_NAME } from "@/lib/brand";
 
 const steps = [
   {
-    step: "1",
     title: "Upload event photos",
     description:
       "Organizers create an event and bulk-upload crowd shots from weddings, conferences, or school days.",
     image: "/marketing/organizer-upload.jpg",
-    alt: "Organizer uploading event photos",
+    alt: "Organizer at a laptop reviewing a bulk upload grid of digital event photo thumbnails",
   },
   {
-    step: "2",
     title: "AI proposes matches",
     description:
       "Face detection finds guests and suggests tags. Admins review each person before anything goes live.",
     image: "/marketing/event-crowd.jpg",
-    alt: "AI matching faces in event photos",
+    alt: "Group at an outdoor event with illustrative face-suggestion outlines on a few faces",
   },
   {
-    step: "3",
     title: "Guests get their gallery",
     description:
       "Attendees register with selfies and see only the photos they appear in—browse, fix mistakes, download.",
     image: "/marketing/guest-gallery.jpg",
-    alt: "Guest viewing their private photo gallery",
+    alt: "Hands holding a phone open to a private gallery of event photos of one attendee",
   },
 ] as const;
 
@@ -142,20 +139,18 @@ const faqs = [
   },
 ] as const;
 
-function IconBox({ children }: { children: ReactNode }) {
+function TrustIcon({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-[0_0_16px_-4px_hsl(var(--glow-primary)/0.4)]">
-      <svg
-        className="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={1.5}
-        aria-hidden
-      >
-        {children}
-      </svg>
-    </div>
+    <svg
+      className="mr-2 inline-block h-4 w-4 shrink-0 text-primary"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      {children}
+    </svg>
   );
 }
 
@@ -204,28 +199,27 @@ export default function HomePage() {
               title="How it works"
               description="Three steps from upload to guest-ready galleries."
             />
-            <div className="grid gap-6 md:grid-cols-3">
+            <ol className="grid list-none gap-6 md:grid-cols-3">
               {steps.map((item, i) => (
-                <ScrollReveal key={item.step} delayMs={i * 80}>
-                  <article className="glass-panel marketing-card-lift flex h-full flex-col overflow-hidden">
-                    <div className="relative aspect-[16/10] w-full border-b border-border/40">
-                      <MarketingImage src={item.image} alt={item.alt} />
-                    </div>
-                    <CardHeader className="pb-2">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-[0_0_12px_hsl(var(--glow-primary)/0.5)]">
-                        {item.step}
-                      </span>
-                      <CardTitle className="mt-3 font-display text-lg text-foreground">
-                        {item.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 text-sm leading-relaxed text-foreground/75">
-                      {item.description}
-                    </CardContent>
-                  </article>
+                <ScrollReveal key={item.title} delayMs={i * 80}>
+                  <li className="h-full">
+                    <article className="marketing-album-card marketing-card-lift flex h-full flex-col overflow-hidden p-0">
+                      <div className="relative aspect-[16/10] w-full border-b border-border/40">
+                        <MarketingImage src={item.image} alt={item.alt} />
+                      </div>
+                      <CardHeader className="px-6 pb-2 pt-5 md:px-8">
+                        <CardTitle className="font-display text-lg text-foreground">
+                          {item.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-6 pb-6 pt-0 text-sm leading-relaxed text-foreground md:px-8 md:pb-8">
+                        {item.description}
+                      </CardContent>
+                    </article>
+                  </li>
                 </ScrollReveal>
               ))}
-            </div>
+            </ol>
           </div>
         </section>
 
@@ -234,12 +228,12 @@ export default function HomePage() {
             <ScrollReveal>
               <article
                 id="for-organizers"
-                className="glass-panel-strong marketing-card-lift scroll-mt-28 overflow-hidden"
+                className="marketing-album-card marketing-card-lift scroll-mt-28 overflow-hidden p-0"
               >
                 <div className="relative aspect-[21/9] border-b border-border/40">
                   <MarketingImage
                     src="/marketing/organizer-upload.jpg"
-                    alt="Conference and event photography"
+                    alt="Organizer at a laptop reviewing a bulk upload grid of digital event photo thumbnails"
                   />
                 </div>
                 <CardHeader>
@@ -276,12 +270,12 @@ export default function HomePage() {
             <ScrollReveal delayMs={100}>
               <article
                 id="for-attendees"
-                className="glass-panel-strong marketing-card-lift scroll-mt-28 overflow-hidden ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+                className="marketing-album-card marketing-card-lift scroll-mt-28 overflow-hidden p-0"
               >
                 <div className="relative aspect-[21/9] border-b border-border/40">
                   <MarketingImage
                     src="/marketing/guest-gallery.jpg"
-                    alt="Friends looking at photos together"
+                    alt="Hands holding a phone open to a private gallery of event photos of one attendee"
                   />
                 </div>
                 <CardHeader>
@@ -319,19 +313,23 @@ export default function HomePage() {
               title="Quality you can stand behind"
               description="Automation where it helps. Human judgment where it matters."
             />
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {trustItems.map((item, i) => (
-                <ScrollReveal key={item.title} delayMs={i * 60}>
-                  <div className="glass-panel marketing-card-lift flex h-full flex-col gap-3 p-5">
-                    <IconBox>{item.icon}</IconBox>
-                    <h3 className="font-semibold text-foreground">{item.title}</h3>
-                    <p className="text-sm leading-relaxed text-foreground/75">
-                      {item.description}
-                    </p>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
+            <ScrollReveal>
+              <div className="marketing-album-card p-6 md:p-8">
+                <ul className="grid list-none gap-8 sm:grid-cols-2">
+                  {trustItems.map((item) => (
+                    <li key={item.title}>
+                      <h3 className="font-semibold text-foreground">
+                        <TrustIcon>{item.icon}</TrustIcon>
+                        {item.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed text-foreground">
+                        {item.description}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </ScrollReveal>
           </div>
         </section>
 
@@ -344,9 +342,9 @@ export default function HomePage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f, i) => (
                 <ScrollReveal key={f.title} delayMs={i * 50}>
-                  <div className="glass-panel marketing-card-lift h-full p-5">
+                  <div className="glass-panel marketing-card-lift h-full p-5 md:p-6">
                     <h3 className="font-semibold text-foreground">{f.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/75">
+                    <p className="mt-2 text-sm leading-relaxed text-foreground">
                       {f.description}
                     </p>
                   </div>
@@ -365,16 +363,19 @@ export default function HomePage() {
             />
             <div className="glass-panel-strong mx-auto max-w-2xl divide-y divide-border/60 overflow-hidden">
               {faqs.map((item) => (
-                <details key={item.q} className="group px-5 py-4">
-                  <summary className="cursor-pointer list-none font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-                    <span className="flex items-center justify-between gap-4">
+                <details key={item.q} className="group px-5 py-2">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-base font-semibold text-foreground marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+                    <span className="flex w-full items-center justify-between gap-4 py-2">
                       {item.q}
-                      <span className="text-xl font-normal text-primary transition-transform group-open:rotate-45">
+                      <span
+                        className="text-xl font-normal text-primary transition-transform group-open:rotate-45"
+                        aria-hidden
+                      >
                         +
                       </span>
                     </span>
                   </summary>
-                  <p className="mt-3 text-sm leading-relaxed text-foreground/75">
+                  <p className="pb-4 text-sm leading-relaxed text-foreground">
                     {item.a}
                   </p>
                 </details>
@@ -383,25 +384,29 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="border-t border-border/40 py-14 sm:py-16">
-          <div className="app-container">
-            <div className="glass-panel-strong mx-auto max-w-3xl px-6 py-12 text-center sm:px-10">
-              <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        <section className="border-t border-border/40 bg-[hsl(var(--marketing-bg-end))] py-14 sm:min-h-[50svh] sm:py-16">
+          <div className="app-container flex min-h-[inherit] items-center">
+            <div className="marketing-album-card mx-auto w-full max-w-3xl text-center">
+              <h2 className="font-display text-[clamp(1.5rem,2.5vw,2rem)] font-semibold tracking-tight text-foreground">
                 Ready to deliver photos guests actually want?
               </h2>
-              <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-foreground/80">
+              <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-foreground">
                 Set up your event in the admin dashboard, or register with the
-                code from your organizer.
+                link from your organizer.
               </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Button asChild size="lg" className="min-w-[10rem] shadow-md">
+              <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="min-h-[44px] w-full shadow-md sm:min-w-[10rem] sm:w-auto"
+                >
                   <Link href="/register">Find my photos</Link>
                 </Button>
                 <Button
                   asChild
                   size="lg"
                   variant="outline"
-                  className="min-w-[10rem] border-primary/40 bg-card/50"
+                  className="min-h-[44px] w-full border-primary/40 bg-card/50 sm:min-w-[10rem] sm:w-auto"
                 >
                   <Link href="/admin">For organizers</Link>
                 </Button>
@@ -411,31 +416,33 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-border/50 py-8">
-        <div className="app-container flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-sm font-medium text-foreground/70">
-            © {new Date().getFullYear()} {PLATFORM_NAME}
-          </p>
-          <nav
-            className="flex flex-wrap justify-center gap-4 text-sm font-medium"
-            aria-label="Footer"
-          >
-            <Link href="/login" className="text-foreground/70 hover:text-foreground">
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="text-foreground/70 hover:text-foreground"
+      <footer className="border-t border-border/50 py-10">
+        <div className="app-container">
+          <div className="marketing-footer-panel flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p className="text-sm font-medium text-foreground">
+              © {new Date().getFullYear()} {PLATFORM_NAME}
+            </p>
+            <nav
+              className="flex flex-wrap justify-center gap-4 text-sm font-medium"
+              aria-label="Footer"
             >
-              Register
-            </Link>
-            <Link href="/admin" className="text-foreground/70 hover:text-foreground">
-              Admin
-            </Link>
-            <Link href="/portal" className="text-foreground/70 hover:text-foreground">
-              Portal
-            </Link>
-          </nav>
+              <Link href="/login" className="text-foreground/80 hover:text-foreground">
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="text-foreground/80 hover:text-foreground"
+              >
+                Register
+              </Link>
+              <Link href="/admin" className="text-foreground/80 hover:text-foreground">
+                Admin
+              </Link>
+              <Link href="/portal" className="text-foreground/80 hover:text-foreground">
+                Portal
+              </Link>
+            </nav>
+          </div>
         </div>
       </footer>
     </div>
