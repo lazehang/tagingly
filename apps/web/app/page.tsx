@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Button } from "@repo/ui/button";
-import { CardContent, CardHeader, CardTitle } from "@repo/ui/card";
+import { AiChip } from "@/components/marketing/ai-chip";
 import { MarketingImage } from "@/components/marketing/marketing-image";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { MarketingPill } from "@/components/marketing/marketing-pill";
 import { HeroSection } from "@/components/marketing/hero-section";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { PLATFORM_NAME } from "@/lib/brand";
@@ -15,6 +15,7 @@ const steps = [
       "Organizers create an event and bulk-upload crowd shots from weddings, conferences, or school days.",
     image: "/marketing/organizer-upload.jpg",
     alt: "Organizer at a laptop reviewing a bulk upload grid of digital event photo thumbnails",
+    showAiChip: false,
   },
   {
     title: "AI proposes matches",
@@ -22,6 +23,7 @@ const steps = [
       "Face detection finds guests and suggests tags. Admins review each person before anything goes live.",
     image: "/marketing/event-crowd.jpg",
     alt: "Group at an outdoor event with illustrative face-suggestion outlines on a few faces",
+    showAiChip: true,
   },
   {
     title: "Guests get their gallery",
@@ -29,6 +31,7 @@ const steps = [
       "Attendees register with selfies and see only the photos they appear in—browse, fix mistakes, download.",
     image: "/marketing/guest-gallery.jpg",
     alt: "Hands holding a phone open to a private gallery of event photos of one attendee",
+    showAiChip: false,
   },
 ] as const;
 
@@ -37,49 +40,21 @@ const trustItems = [
     title: "Admin review",
     description:
       "Confirm or reject every proposed tag. Wrong matches stay out of guest galleries.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    ),
   },
   {
     title: "Smarter over time",
     description:
       "Rejections and “not me” feedback are remembered so reprocessing skips bad pairs.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-      />
-    ),
   },
   {
     title: "Privacy by design",
     description:
       "Selfies and galleries are scoped to the event. Guests never browse the full album.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-      />
-    ),
   },
   {
     title: "Multi-selfie matching",
     description:
       "Up to five profile photos per guest improve accuracy across lighting and angles.",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-3.736 0l-.822 1.316z"
-      />
-    ),
   },
 ] as const;
 
@@ -139,20 +114,7 @@ const faqs = [
   },
 ] as const;
 
-function TrustIcon({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      className="mr-2 inline-block h-4 w-4 shrink-0 text-primary"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden
-    >
-      {children}
-    </svg>
-  );
-}
+const suggestedTags = ["Alex M.", "Jordan K.", "Sam R."] as const;
 
 function SectionHeading({
   id,
@@ -167,16 +129,27 @@ function SectionHeading({
     <div className="mx-auto max-w-2xl text-center">
       <h2
         id={id}
-        className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
+        className="font-display text-[clamp(1.5rem,2.5vw,2.25rem)] font-medium tracking-tight text-[var(--mkt-ink)]"
       >
         {title}
       </h2>
       {description ? (
-        <p className="mt-3 text-base leading-relaxed text-foreground/75">
+        <p className="mt-3 text-base leading-relaxed text-[var(--mkt-ink-muted)]">
           {description}
         </p>
       ) : null}
     </div>
+  );
+}
+
+function CreamCheck({ children }: { children: ReactNode }) {
+  return (
+    <li className="flex gap-2.5 text-base leading-relaxed text-[var(--mkt-cream-ink)]/85">
+      <span className="font-semibold text-[var(--mkt-cream-ink)]" aria-hidden>
+        ✓
+      </span>
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -190,7 +163,7 @@ export default function HomePage() {
 
         <section
           id="how-it-works"
-          className="border-b border-border/50 py-16 sm:py-20"
+          className="border-b border-[var(--mkt-panel-border)] py-16 sm:py-20"
           aria-labelledby="how-it-works-heading"
         >
           <div className="app-container space-y-12">
@@ -199,22 +172,27 @@ export default function HomePage() {
               title="How it works"
               description="Three steps from upload to guest-ready galleries."
             />
-            <ol className="grid list-none gap-6 md:grid-cols-3">
+            <ol className="grid list-none gap-6 min-[900px]:grid-cols-3">
               {steps.map((item, i) => (
-                <ScrollReveal key={item.title} delayMs={i * 80}>
+                <ScrollReveal key={item.title} delayMs={i * 70}>
                   <li className="h-full">
-                    <article className="marketing-album-card marketing-card-lift flex h-full flex-col overflow-hidden p-0">
-                      <div className="relative aspect-[16/10] w-full border-b border-border/40">
+                    <article className="mkt-cream-card marketing-card-lift relative flex h-full flex-col overflow-hidden p-0">
+                      {item.showAiChip ? (
+                        <div className="absolute right-3 top-3 z-10">
+                          <AiChip label="AI" />
+                        </div>
+                      ) : null}
+                      <div className="relative aspect-[16/10] w-full">
                         <MarketingImage src={item.image} alt={item.alt} />
                       </div>
-                      <CardHeader className="px-6 pb-2 pt-5 md:px-8">
-                        <CardTitle className="font-display text-lg text-foreground">
+                      <div className="flex flex-1 flex-col px-6 pb-6 pt-5 md:px-7 md:pb-7">
+                        <h3 className="font-display text-lg font-medium text-[var(--mkt-cream-ink)]">
                           {item.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-6 pb-6 pt-0 text-sm leading-relaxed text-foreground md:px-8 md:pb-8">
-                        {item.description}
-                      </CardContent>
+                        </h3>
+                        <p className="mt-2 text-base leading-relaxed text-[var(--mkt-cream-ink)]/85">
+                          {item.description}
+                        </p>
+                      </div>
                     </article>
                   </li>
                 </ScrollReveal>
@@ -223,117 +201,139 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="border-b border-border/50 py-16 sm:py-20">
-          <div className="app-container grid gap-8 lg:grid-cols-2">
+        <section
+          className="border-b border-[var(--mkt-panel-border)] py-16 sm:py-20"
+          aria-labelledby="ai-beside-heading"
+        >
+          <div className="app-container space-y-10">
+            <SectionHeading
+              id="ai-beside-heading"
+              title="AI proposes. You decide."
+              description="Matches stay suggestions until an organizer confirms. Guests never see a tag you rejected."
+            />
+            <ScrollReveal>
+              <div className="grid gap-6 min-[900px]:grid-cols-2 min-[900px]:items-stretch">
+                <div className="relative min-h-[280px] overflow-hidden rounded-[var(--mkt-radius-stage)] min-[900px]:min-h-[360px]">
+                  <MarketingImage
+                    src="/marketing/hero-event.jpg"
+                    alt="Guest at a wedding reception showing a private event photo gallery on her phone"
+                    className="object-[center_40%]"
+                  />
+                </div>
+                <article
+                  data-ui
+                  className="mkt-cream-card flex flex-col p-6 md:p-8"
+                  aria-label="Example match proposals awaiting organizer review"
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 className="font-display text-xl font-medium text-[var(--mkt-cream-ink)]">
+                      Proposed tags
+                    </h3>
+                    <AiChip label="Matching…" />
+                  </div>
+                  <ul className="space-y-3">
+                    {suggestedTags.map((name) => (
+                      <li
+                        key={name}
+                        className="flex items-center justify-between rounded-lg border border-[color:rgb(26_18_14/0.12)] bg-[var(--mkt-cream-strong)] px-4 py-3"
+                      >
+                        <span className="text-base font-medium text-[var(--mkt-cream-ink)]">
+                          {name}
+                        </span>
+                        <span className="text-sm text-[var(--mkt-cream-ink)]/65">
+                          Suggested
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-5 text-base leading-relaxed text-[var(--mkt-cream-ink)]/85">
+                    Face detection finds guests in each upload. You confirm or reject
+                    before anything appears in attendee galleries.
+                  </p>
+                </article>
+              </div>
+            </ScrollReveal>
+          </div>
+        </section>
+
+        <section className="border-b border-[var(--mkt-panel-border)] py-16 sm:py-20">
+          <div className="app-container grid gap-6 min-[900px]:grid-cols-2 min-[900px]:gap-8">
             <ScrollReveal>
               <article
                 id="for-organizers"
-                className="marketing-album-card marketing-card-lift scroll-mt-28 overflow-hidden p-0"
+                className="mkt-cream-card marketing-card-lift scroll-mt-28 p-6 md:p-8"
               >
-                <div className="relative aspect-[21/9] border-b border-border/40">
-                  <MarketingImage
-                    src="/marketing/organizer-upload.jpg"
-                    alt="Organizer at a laptop reviewing a bulk upload grid of digital event photo thumbnails"
-                  />
+                <h3 className="font-display text-xl font-medium text-[var(--mkt-cream-ink)]">
+                  I&apos;m organizing an event
+                </h3>
+                <ul className="mt-5 space-y-2.5">
+                  <CreamCheck>Create events and bulk-upload crowd photos</CreamCheck>
+                  <CreamCheck>Review AI-proposed tags by name and match score</CreamCheck>
+                  <CreamCheck>Control whether guests can download their shots</CreamCheck>
+                </ul>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <MarketingPill href="/admin" variant="primaryOnCream" className="w-full sm:w-auto">
+                    Start as organizer
+                  </MarketingPill>
+                  <MarketingPill
+                    href="/login"
+                    variant="secondaryOnCream"
+                    className="w-full sm:w-auto"
+                  >
+                    Sign in
+                  </MarketingPill>
                 </div>
-                <CardHeader>
-                  <CardTitle className="font-display text-xl text-foreground">
-                    I&apos;m organizing an event
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">✓</span>
-                      Create events and bulk-upload crowd photos
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">✓</span>
-                      Review AI-proposed tags by name and match score
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">✓</span>
-                      Control whether guests can download their shots
-                    </li>
-                  </ul>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <Button asChild>
-                      <Link href="/admin">Start as organizer</Link>
-                    </Button>
-                    <Button variant="outline" asChild className="bg-card/50">
-                      <Link href="/login">Sign in</Link>
-                    </Button>
-                  </div>
-                </CardContent>
               </article>
             </ScrollReveal>
-            <ScrollReveal delayMs={100}>
+            <ScrollReveal delayMs={90}>
               <article
                 id="for-attendees"
-                className="marketing-album-card marketing-card-lift scroll-mt-28 overflow-hidden p-0"
+                className="mkt-cream-card marketing-card-lift scroll-mt-28 p-6 md:p-8"
               >
-                <div className="relative aspect-[21/9] border-b border-border/40">
-                  <MarketingImage
-                    src="/marketing/guest-gallery.jpg"
-                    alt="Hands holding a phone open to a private gallery of event photos of one attendee"
-                  />
+                <h3 className="font-display text-xl font-medium text-[var(--mkt-cream-ink)]">
+                  I attended an event
+                </h3>
+                <ul className="mt-5 space-y-2.5">
+                  <CreamCheck>
+                    Register from your organizer&apos;s link with up to five selfies
+                  </CreamCheck>
+                  <CreamCheck>Browse only photos you appear in—nothing else</CreamCheck>
+                  <CreamCheck>Flag wrong tags and download when the organizer allows</CreamCheck>
+                </ul>
+                <div className="mt-8">
+                  <MarketingPill href="/register" variant="primaryOnCream" className="w-full sm:w-auto">
+                    Register for an event
+                  </MarketingPill>
                 </div>
-                <CardHeader>
-                  <CardTitle className="font-display text-xl text-foreground">
-                    I attended an event
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2.5 text-sm leading-relaxed text-foreground/80">
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">✓</span>
-                      Register from your organizer&apos;s link with up to five selfies
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">✓</span>
-                      Browse only photos you appear in—nothing else
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-bold text-primary">✓</span>
-                      Flag wrong tags and download when the organizer allows
-                    </li>
-                  </ul>
-                  <Button asChild className="mt-2 shadow-sm">
-                    <Link href="/register">Register for an event</Link>
-                  </Button>
-                </CardContent>
               </article>
             </ScrollReveal>
           </div>
         </section>
 
-        <section className="border-b border-border/50 py-16 sm:py-20">
+        <section className="border-b border-[var(--mkt-panel-border)] py-16 sm:py-20">
           <div className="app-container space-y-12">
             <SectionHeading
               title="Quality you can stand behind"
               description="Automation where it helps. Human judgment where it matters."
             />
             <ScrollReveal>
-              <div className="marketing-album-card p-6 md:p-8">
-                <ul className="grid list-none gap-8 sm:grid-cols-2">
-                  {trustItems.map((item) => (
-                    <li key={item.title}>
-                      <h3 className="font-semibold text-foreground">
-                        <TrustIcon>{item.icon}</TrustIcon>
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 text-sm leading-relaxed text-foreground">
-                        {item.description}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <ul className="grid list-none gap-4 sm:grid-cols-2 sm:gap-5">
+                {trustItems.map((item) => (
+                  <li key={item.title} className="mkt-cream-card p-6 md:p-7">
+                    <h3 className="font-display text-lg font-medium text-[var(--mkt-cream-ink)]">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 text-base leading-relaxed text-[var(--mkt-cream-ink)]/85">
+                      {item.description}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </ScrollReveal>
           </div>
         </section>
 
-        <section className="border-b border-border/50 py-16 sm:py-20">
+        <section className="border-b border-[var(--mkt-panel-border)] py-16 sm:py-20">
           <div className="app-container space-y-12">
             <SectionHeading
               title="Everything in one place"
@@ -341,10 +341,10 @@ export default function HomePage() {
             />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f, i) => (
-                <ScrollReveal key={f.title} delayMs={i * 50}>
-                  <div className="glass-panel marketing-card-lift h-full p-5 md:p-6">
-                    <h3 className="font-semibold text-foreground">{f.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground">
+                <ScrollReveal key={f.title} delayMs={i * 55}>
+                  <div className="mkt-cream-card marketing-card-lift h-full p-5 md:p-6">
+                    <h3 className="font-semibold text-[var(--mkt-cream-ink)]">{f.title}</h3>
+                    <p className="mt-2 text-base leading-relaxed text-[var(--mkt-cream-ink)]/85">
                       {f.description}
                     </p>
                   </div>
@@ -361,21 +361,21 @@ export default function HomePage() {
               title="Questions"
               description="Quick answers for organizers and guests."
             />
-            <div className="glass-panel-strong mx-auto max-w-2xl divide-y divide-border/60 overflow-hidden">
+            <div className="mkt-faq-panel mx-auto max-w-2xl divide-y divide-[var(--mkt-panel-border)]">
               {faqs.map((item) => (
-                <details key={item.q} className="group px-5 py-2">
-                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-base font-semibold text-foreground marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+                <details key={item.q} className="group px-5 py-1">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-base font-medium text-[var(--mkt-ink)] marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mkt-ai)] [&::-webkit-details-marker]:hidden">
                     <span className="flex w-full items-center justify-between gap-4 py-2">
                       {item.q}
                       <span
-                        className="text-xl font-normal text-primary transition-transform group-open:rotate-45"
+                        className="text-xl font-normal text-[var(--mkt-ink-muted)] transition-transform group-open:rotate-45"
                         aria-hidden
                       >
                         +
                       </span>
                     </span>
                   </summary>
-                  <p className="pb-4 text-sm leading-relaxed text-foreground">
+                  <p className="pb-4 text-base leading-relaxed text-[var(--mkt-ink-muted)]">
                     {item.a}
                   </p>
                 </details>
@@ -384,61 +384,53 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="border-t border-border/40 bg-[hsl(var(--marketing-bg-end))] py-14 sm:min-h-[50svh] sm:py-16">
-          <div className="app-container flex min-h-[inherit] items-center">
-            <div className="marketing-album-card mx-auto w-full max-w-3xl text-center">
-              <h2 className="font-display text-[clamp(1.5rem,2.5vw,2rem)] font-semibold tracking-tight text-foreground">
+        <section className="border-t border-[var(--mkt-panel-border)] py-14 sm:py-16">
+          <div className="app-container">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="font-display text-[clamp(1.5rem,2.5vw,2rem)] font-medium tracking-tight text-[var(--mkt-ink)]">
                 Ready to deliver photos guests actually want?
               </h2>
-              <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-foreground">
-                Set up your event in the admin dashboard, or register with the
-                link from your organizer.
+              <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-[var(--mkt-ink-muted)]">
+                Set up your event in the admin dashboard, or register with the link from
+                your organizer.
               </p>
               <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-                <Button
-                  asChild
-                  size="lg"
-                  className="min-h-[44px] w-full shadow-md sm:min-w-[10rem] sm:w-auto"
+                <MarketingPill href="/register" className="w-full sm:min-w-[10rem] sm:w-auto">
+                  Find my photos
+                </MarketingPill>
+                <MarketingPill
+                  href="/admin"
+                  variant="secondaryOnDark"
+                  className="w-full sm:min-w-[10rem] sm:w-auto"
                 >
-                  <Link href="/register">Find my photos</Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="min-h-[44px] w-full border-primary/40 bg-card/50 sm:min-w-[10rem] sm:w-auto"
-                >
-                  <Link href="/admin">For organizers</Link>
-                </Button>
+                  For organizers
+                </MarketingPill>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-border/50 py-10">
+      <footer className="border-t border-[var(--mkt-panel-border)] py-10">
         <div className="app-container">
-          <div className="marketing-footer-panel flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <p className="text-sm font-medium text-foreground">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p className="text-sm font-medium text-[var(--mkt-ink-muted)]">
               © {new Date().getFullYear()} {PLATFORM_NAME}
             </p>
             <nav
               className="flex flex-wrap justify-center gap-4 text-sm font-medium"
               aria-label="Footer"
             >
-              <Link href="/login" className="text-foreground/80 hover:text-foreground">
+              <Link href="/login" className="mkt-link-muted">
                 Login
               </Link>
-              <Link
-                href="/register"
-                className="text-foreground/80 hover:text-foreground"
-              >
+              <Link href="/register" className="mkt-link-muted">
                 Register
               </Link>
-              <Link href="/admin" className="text-foreground/80 hover:text-foreground">
+              <Link href="/admin" className="mkt-link-muted">
                 Admin
               </Link>
-              <Link href="/portal" className="text-foreground/80 hover:text-foreground">
+              <Link href="/portal" className="mkt-link-muted">
                 Portal
               </Link>
             </nav>

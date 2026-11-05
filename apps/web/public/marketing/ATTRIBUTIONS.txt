@@ -9,6 +9,11 @@ hero-event.jpg
   AI-generated. Guest at an event viewing a private phone gallery.
   Generated 2026-11-05. No Unsplash source.
 
+hero-stage.jpg
+  Interim hero stage crop — same AI-generated scene as hero-event.jpg,
+  reserved for Amperos-style type-on-photo layout (object-position crop).
+  Generated 2026-11-05. Replace with a wider master when available.
+
 guest-gallery.jpg
   AI-generated. Hands holding a phone showing a private attendee gallery.
   Generated 2026-11-05. No Unsplash source.

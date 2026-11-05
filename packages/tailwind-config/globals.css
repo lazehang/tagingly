@@ -112,13 +112,50 @@
   }
 
   .marketing-page {
-    @apply min-h-screen bg-background text-foreground;
-    background: linear-gradient(
-      165deg,
-      hsl(var(--marketing-bg-start)) 0%,
-      hsl(var(--marketing-bg-mid)) 45%,
-      hsl(var(--marketing-bg-end)) 100%
-    );
+    min-height: 100vh;
+    background: var(--mkt-field);
+    color: var(--mkt-ink);
+  }
+
+  .mkt-nav {
+    border-bottom: 1px solid var(--mkt-panel-border);
+    background: var(--mkt-field-elevated);
+  }
+
+  .mkt-cream-card {
+    border-radius: var(--mkt-radius-card);
+    background: var(--mkt-cream);
+    color: var(--mkt-cream-ink);
+  }
+
+  .mkt-cream-card-strong {
+    border-radius: var(--mkt-radius-card);
+    background: var(--mkt-cream-strong);
+    color: var(--mkt-cream-ink);
+  }
+
+  .mkt-faq-panel {
+    border-radius: var(--mkt-radius-card);
+    border: 1px solid var(--mkt-panel-border);
+    background: var(--mkt-field-elevated);
+  }
+
+  .mkt-link {
+    color: var(--mkt-ink);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .mkt-link:hover {
+    text-decoration: underline;
+  }
+
+  .mkt-link-muted {
+    color: var(--mkt-ink-muted);
+  }
+
+  .mkt-link-muted:hover {
+    color: var(--mkt-ink);
   }
 
   .text-body {
@@ -202,6 +239,37 @@
     box-shadow:
       var(--shadow-lg),
       0 0 28px -6px hsl(var(--glow-primary) / 0.25);
+  }
+
+  .marketing-page .marketing-card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px -12px rgb(26 18 14 / 0.45);
+  }
+
+  .mkt-review-float {
+    box-shadow:
+      0 4px 6px -2px rgb(26 18 14 / 0.2),
+      0 16px 40px -8px rgb(26 18 14 / 0.35);
+  }
+
+  .mkt-hero-scrim {
+    background: linear-gradient(
+      to top,
+      rgb(26 18 14 / 0.88) 0%,
+      rgb(26 18 14 / 0.55) 42%,
+      transparent 72%
+    );
+  }
+
+  @media (min-width: 960px) {
+    .mkt-hero-scrim {
+      background: linear-gradient(
+        to right,
+        rgb(26 18 14 / 0.78) 0%,
+        rgb(26 18 14 / 0.45) 38%,
+        transparent 62%
+      );
+    }
   }
 }
 
