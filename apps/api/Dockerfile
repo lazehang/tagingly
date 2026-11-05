@@ -23,28 +23,18 @@ RUN npm ci
 RUN npm run build -w api
 RUN npm prune --omit=dev
 
-# Bake face-api weights into the image (avoids download + extra RAM spike on first request)
-ARG FACE_MODEL_BASE=https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights
+# Bake OpenCV Zoo YuNet + SFace ONNX (MIT / Apache-2.0) into the image
+ARG OPENCV_ZOO_BASE=https://github.com/opencv/opencv_zoo/raw/main/models
 RUN mkdir -p /app/apps/api/face-models \
-  && cd /app/apps/api/face-models \
-  && for f in \
-    ssd_mobilenetv1_model-weights_manifest.json \
-    ssd_mobilenetv1_model-shard1 \
-    ssd_mobilenetv1_model-shard2 \
-    face_landmark_68_model-weights_manifest.json \
-    face_landmark_68_model-shard1 \
-    face_recognition_model-weights_manifest.json \
-    face_recognition_model-shard1 \
-    face_recognition_model-shard2; do \
-      curl -fsSL "${FACE_MODEL_BASE}/${f}" -o "${f}"; \
-    done
+  && curl -fsSL "${OPENCV_ZOO_BASE}/face_detection_yunet/face_detection_yunet_2023mar.onnx" \
+    -o /app/apps/api/face-models/face_detection_yunet_2023mar.onnx \
+  && curl -fsSL "${OPENCV_ZOO_BASE}/face_recognition_sface/face_recognition_sface_2021dec.onnx" \
+    -o /app/apps/api/face-models/face_recognition_sface_2021dec.onnx
 
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
-# Quieter TensorFlow / Node deprecation noise in logs
-ENV TF_CPP_MIN_LOG_LEVEL=2
 ENV NODE_NO_WARNINGS=1
-# Cap V8 heap; native TF/canvas also need RAM — use ≥2GB container on Railway
+# ONNX Runtime + canvas; typical RSS ≪ legacy TensorFlow face-api (512–1024 MB often sufficient)
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 EXPOSE 4000
 CMD ["node", "dist/index.js"]

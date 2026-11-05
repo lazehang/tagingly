@@ -22,6 +22,24 @@ const envSchema = z.object({
   PHOTO_PROCESS_CONCURRENCY: z.coerce.number().int().min(1).max(2).default(1),
   /** Max width/height before face detection (reduces RAM on large uploads). */
   PHOTO_MAX_IMAGE_DIMENSION: z.coerce.number().int().min(512).max(4096).default(1280),
+  /** Directory for YuNet + SFace ONNX files (relative to API cwd unless absolute). */
+  FACE_MODELS_DIR: z.string().optional(),
+  FACE_YUNET_MODEL: z
+    .string()
+    .default("face_detection_yunet_2023mar.onnx"),
+  FACE_SFACE_MODEL: z
+    .string()
+    .default("face_recognition_sface_2021dec.onnx"),
+  /** YuNet decode threshold (before MATCH_MIN_DETECTION_SCORE). */
+  FACE_YUNET_SCORE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
+  FACE_YUNET_NMS_THRESHOLD: z.coerce.number().min(0).max(1).default(0.3),
+  FACE_YUNET_TOP_K: z.coerce.number().int().min(1).max(10_000).default(5000),
+  /** When true, missing ONNX files fail fast instead of downloading from OpenCV Zoo. */
+  FACE_MODELS_REQUIRED: z
+    .enum(["true", "false"])
+    .or(z.boolean())
+    .optional()
+    .transform((v) => v === true || v === "true"),
   PHOTO_UPLOAD_MAX_FILE_MB: z.coerce.number().int().min(1).max(40).default(15),
   PHOTO_UPLOAD_MAX_FILES: z.coerce.number().int().min(1).max(30).default(8),
   USE_LOCAL_STORAGE: z

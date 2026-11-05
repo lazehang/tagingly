@@ -119,6 +119,34 @@ export async function deleteSelfieEmbeddingByKey(
   );
 }
 
+/** Remove every object in FaceEmbedding (used after embedding model cutover). */
+export async function deleteAllFaceEmbeddings(): Promise<number> {
+  const env = loadEnv();
+  let deleted = 0;
+  for (;;) {
+    const q = `{
+      Get {
+        ${FACE_CLASS}(limit: 200) {
+          _additional { id }
+        }
+      }
+    }`;
+    const data = await gql(q);
+    const rows = data.data?.Get?.[FACE_CLASS] ?? [];
+    if (rows.length === 0) break;
+    for (const row of rows) {
+      const wid = row._additional?.id;
+      if (!wid) continue;
+      const res = await fetch(`${env.WEAVIATE_URL}/v1/objects/${wid}`, {
+        method: "DELETE",
+        headers: headers(),
+      });
+      if (res.ok || res.status === 404) deleted++;
+    }
+  }
+  return deleted;
+}
+
 export async function deleteSelfieEmbeddings(userId: string): Promise<void> {
   const q = `{
     Get {

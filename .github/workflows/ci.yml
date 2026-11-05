@@ -41,5 +41,8 @@ jobs:
       - name: Typecheck
         run: npm run check-types
 
+      - name: Unit tests (API)
+        run: npm run test --workspace=api
+
       - name: Build
         run: npm run build
