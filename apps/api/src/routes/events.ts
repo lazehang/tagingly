@@ -578,7 +578,7 @@ router.post(
         reason: TagExclusionReason.ADMIN_REMOVE_CONFIRMED,
       });
       res.json({ photo: await toPhotoDetailDto(updated) });
-    } catch (e) {
+    } catch {
       res.status(400).json({ error: "Failed to remove tag" });
     }
   }

@@ -13,6 +13,7 @@ services:
   weaviate:
     image: cr.weaviate.io/semitechnologies/weaviate:1.27.0
     restart: on-failure:0
+    # Host 8081 → container 8080 (WEAVIATE_URL=http://localhost:8081 in .env.example)
     ports:
       - "8081:8080"
       - "50051:50051"

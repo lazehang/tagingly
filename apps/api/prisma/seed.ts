@@ -6,7 +6,7 @@ const prisma = createPrismaClient();
 
 async function main() {
   const email = process.env["ADMIN_EMAIL"] ?? "admin@example.com";
-  const password = process.env["ADMIN_PASSWORD"] ?? "admin-change-me";
+  const password = process.env["ADMIN_PASSWORD"] ?? "change-me-admin";
   const name = process.env["ADMIN_NAME"] ?? "Superadmin";
 
   const passwordHash = await bcrypt.hash(password, 10);

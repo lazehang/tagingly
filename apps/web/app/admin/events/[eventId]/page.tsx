@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { QuickLinkCard } from "@/components/dashboard/quick-link-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { serverApiFetch } from "@/lib/server-api";
 import { eventLandingPath } from "@/lib/event-urls";
 import type { EventDto, PhotoDto } from "@repo/types";
-import { Button } from "@repo/ui/button";
 
 export default async function AdminEventOverviewPage({
   params,

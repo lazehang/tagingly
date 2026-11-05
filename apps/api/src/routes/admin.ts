@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { requireSuperadmin } from "../middleware/auth.js";
 import { toUserPublic } from "../lib/userDto.js";
 import { addEventOrganizer, assertStaffRole } from "../lib/eventAccess.js";
-import type { EventOrganizerDto, UserPublicDto } from "@repo/types";
+import type { EventOrganizerDto } from "@repo/types";
 
 const router = Router();
 

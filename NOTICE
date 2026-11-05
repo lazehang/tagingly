@@ -1,0 +1,42 @@
+Tagingly — third-party notices
+===============================
+
+This project includes or depends on the following components. See also
+[`LICENSE`](LICENSE) for the MIT license applying to Tagingly source code
+written by the project authors.
+
+TensorFlow.js (@tensorflow/tfjs-node)
+-------------------------------------
+Used by the API face pipeline. Licensed under the Apache License, Version 2.0.
+https://github.com/tensorflow/tfjs
+
+face-api.js / @vladmandic/face-api
+----------------------------------
+Face detection, landmarks, and recognition models used by the API (TensorFlow.js
+backend). MIT License. Model weights may be downloaded at build or runtime; see
+`apps/api/Dockerfile` and `apps/api/src/lib/face.ts`.
+
+Weaviate
+--------
+When self-hosted via Docker Compose, the Weaviate server image is used
+(`docker-compose.yml`). Weaviate is licensed under BSD-3-Clause.
+https://github.com/weaviate/weaviate
+
+Weaviate Cloud (optional) is a separate hosted service with its own terms.
+
+Marketing images (Unsplash)
+---------------------------
+Stock photos in `apps/web/public/marketing/` are listed in
+[`apps/web/public/marketing/ATTRIBUTIONS.txt`](apps/web/public/marketing/ATTRIBUTIONS.txt)
+(Unsplash License).
+
+Google Fonts
+------------
+The web app loads Fraunces and Plus Jakarta Sans via `next/font/google`
+(`apps/web/app/layout.tsx`). These fonts are licensed under the SIL Open Font
+License 1.1.
+
+Other dependencies
+------------------
+See `package-lock.json` and each package’s license field for additional
+npm dependencies (Express, Next.js, Prisma, etc.).
