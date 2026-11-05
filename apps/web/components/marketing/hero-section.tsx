@@ -13,7 +13,7 @@ export function HeroSection() {
             src="/marketing/event-crowd.jpg"
             alt="Outdoor school or community event with a diverse group of guests and illustrative face-match suggestions"
             priority
-            className="object-cover object-[48%_42%] min-[960px]:object-[52%_38%]"
+            className="object-cover object-[46%_40%] min-[960px]:object-[50%_36%]"
           />
           <div
             className="mkt-hero-scrim mkt-hero-scrim-event pointer-events-none absolute inset-0"
