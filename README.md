@@ -157,7 +157,7 @@ Production is **three moving parts** plus data services: the **Next.js app** (`a
 
 | Component | Typical hosting | Notes |
 |-----------|-----------------|--------|
-| **Web** | [Vercel](https://vercel.com), [Netlify](https://www.netlify.com), or any Node host | Stateless; set env vars in the provider UI. Use the **public** site URL for `NEXTAUTH_URL`. |
+| **Web** | [Vercel](https://vercel.com), [Cloudflare Pages](https://pages.cloudflare.com), or any Node host | Stateless; set env vars in the provider UI. Use the **public** site URL for `NEXTAUTH_URL`. Build from monorepo root (`npm run build --workspace=web`). |
 | **API** | **Docker** on a VM, [Fly.io](https://fly.io), [Railway](https://railway.app), [Render](https://render.com), [Google Cloud Run](https://cloud.google.com/run) (with enough CPU/memory), etc. | Needs **Node ≥ 20** and **≥ 2 GB RAM** for face/TensorFlow workloads. Native libs (`canvas`, `tfjs-node`) use [`apps/api/Dockerfile`](apps/api/Dockerfile). |
 | **PostgreSQL** | [Neon](https://neon.tech), [Supabase](https://supabase.com), [RDS](https://aws.amazon.com/rds/), [Cloud SQL](https://cloud.google.com/sql), managed Postgres on your host | Put the connection string in `DATABASE_URL`. Prefer **`prisma migrate deploy`** for production schema changes (add migrations when you move beyond `db push`). |
 | **Weaviate** | [Weaviate Cloud](https://weaviate.io/cloud), or self-hosted ([Docker](https://weaviate.io/developers/weaviate/installation/docker-compose)) | Set `WEAVIATE_URL` (and `WEAVIATE_API_KEY` if the cluster requires it). The API creates the `FaceEmbedding` class on startup. |
@@ -207,7 +207,7 @@ Or `npm run build` at the root to run Turbo `build` for all packages that define
 1. Create Postgres (e.g. Railway Postgres or Neon), enable **Prisma Accelerate** on that database in [Prisma Data Platform](https://console.prisma.io/), and provision Weaviate Cloud + B2.
 2. In **Railway**, create a service for the API from this repo (Dockerfile path `apps/api/Dockerfile`, build context = repo root — see below).
 3. Set API variables (see **Railway (API service)** below). Deploy and copy the public API URL (`https://….up.railway.app`).
-4. Deploy **web** (e.g. Netlify) with `NEXT_PUBLIC_API_URL` / `API_URL` pointing at the Railway API URL; set API `CORS_ORIGIN` to the web origin.
+4. Deploy **web** on Vercel (or your Node host) with `NEXT_PUBLIC_API_URL` / `API_URL` pointing at the Railway API URL; set API `CORS_ORIGIN` to the web origin.
 
 ### Railway (API service)
 
@@ -230,7 +230,7 @@ The Dockerfile runs `npm run build -w api`, which uses `prisma generate --no-eng
 | `DATABASE_URL` | Prisma Accelerate URL: `prisma+postgres://accelerate.prisma-data.net/?api_key=…` |
 | `DIRECT_URL` (optional) | Direct Postgres URL for one-off `db push` / seed in shell (see below); not required for the running app |
 | `JWT_SECRET` | Long random secret |
-| `CORS_ORIGIN` | Your web app origin, e.g. `https://your-site.netlify.app` |
+| `CORS_ORIGIN` | Your web app origin, e.g. `https://app.example.com` |
 | `WEAVIATE_URL`, `WEAVIATE_API_KEY` | Weaviate Cloud |
 | `USE_LOCAL_STORAGE` | `false` |
 | `B2_*` | Backblaze B2 S3 credentials |
