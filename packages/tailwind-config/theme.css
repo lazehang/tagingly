@@ -66,6 +66,25 @@
   --header-height: 3.5rem;
   --content-max-width: 72rem;
 
+  /* Marketing landing (warm dark room — scoped via .marketing-page) */
+  --mkt-field: #1a120e;
+  --mkt-field-elevated: #241810;
+  --mkt-ink: #f7f3ee;
+  --mkt-ink-muted: #c9c2b8;
+  --mkt-cream: #ece4e0;
+  --mkt-cream-strong: #fcf7f4;
+  --mkt-cream-ink: #1a120e;
+  --mkt-panel: #2c1810;
+  --mkt-panel-ink: #f7f3ee;
+  --mkt-panel-border: rgb(247 243 238 / 0.12);
+  --mkt-ai: #c8a8f8;
+  --mkt-ai-ink: #1a120e;
+  --mkt-match-line: rgb(200 168 248 / 0.85);
+  --mkt-pill-height: 2.75rem;
+  --mkt-pill-radius: 9999px;
+  --mkt-radius-stage: 1.25rem;
+  --mkt-radius-card: 1rem;
+
   /* Typography */
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;

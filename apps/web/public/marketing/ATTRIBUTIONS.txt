@@ -1,27 +1,33 @@
 Tagingly marketing photographs
 ==============================
 
-All images below were AI-generated for Tagingly marketing on 2026-11-05
-(Cursor GenerateImage / Grok Bot Designer Stage 1b). Intended for commercial
-use in this MIT open-core project’s public marketing homepage.
+event-crowd.jpg (also marketing homepage hero photo stage)
+  AI-generated. Outdoor group with illustrative face-suggestion chrome
+  (no real match scores). Generated 2026-11-05 (PR #4). Hero stage, step 2,
+  and ReviewStageMock crops reference this file directly.
+
+hero-stage.jpg (optional / unused in UI)
+  Unsplash License — Fotógrafo Samuel Cruz (@fotografosamuelcruz)
+  "People celebrating at a dimly lit outdoor party event"
+  https://unsplash.com/photos/people-celebrating-at-a-dimly-lit-outdoor-party-event-wGqjddDDkFQ
+  Downloaded 2026-11-05; superseded by event-crowd.jpg for the homepage hero.
 
 hero-event.jpg
-  AI-generated. Guest at an event viewing a private phone gallery.
-  Generated 2026-11-05. No Unsplash source.
+  Derivative crop from hero-stage.jpg (same Unsplash photo and license as above).
+  Used in the "AI proposes. You decide." section.
 
 guest-gallery.jpg
-  AI-generated. Hands holding a phone showing a private attendee gallery.
-  Generated 2026-11-05. No Unsplash source.
+  Derivative crop from hero-stage.jpg (same Unsplash photo and license as above).
+  Used in How it works step 3 and related marketing copy.
 
 organizer-upload.jpg
   AI-generated. Organizer laptop bulk-upload grid of event thumbnails.
-  Generated 2026-11-05. No Unsplash source.
+  Generated 2026-11-05 (PR #4). Replace with stock when a suitable upload UI
+  photograph is sourced.
 
-event-crowd.jpg
-  AI-generated. Outdoor group with illustrative face-suggestion chrome
-  (no real match scores). Generated 2026-11-05. No Unsplash source.
+Removed / superseded
+--------------------
+Prior AI-generated hero-stage copy tied to the single-portrait hero-event scene
+(same file as hero-event.jpg before this change) — replaced by Unsplash hero above.
 
-Removed
--------
-wedding-celebration.jpg — unused; deleted in this revamp.
-Prior Unsplash credits for the replaced files no longer apply.
+wedding-celebration.jpg — unused; deleted in PR #4 revamp.

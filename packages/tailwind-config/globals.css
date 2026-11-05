@@ -112,13 +112,50 @@
   }
 
   .marketing-page {
-    @apply min-h-screen bg-background text-foreground;
-    background: linear-gradient(
-      165deg,
-      hsl(var(--marketing-bg-start)) 0%,
-      hsl(var(--marketing-bg-mid)) 45%,
-      hsl(var(--marketing-bg-end)) 100%
-    );
+    min-height: 100vh;
+    background: var(--mkt-field);
+    color: var(--mkt-ink);
+  }
+
+  .mkt-nav {
+    border-bottom: 1px solid var(--mkt-panel-border);
+    background: var(--mkt-field-elevated);
+  }
+
+  .mkt-cream-card {
+    border-radius: var(--mkt-radius-card);
+    background: var(--mkt-cream);
+    color: var(--mkt-cream-ink);
+  }
+
+  .mkt-cream-card-strong {
+    border-radius: var(--mkt-radius-card);
+    background: var(--mkt-cream-strong);
+    color: var(--mkt-cream-ink);
+  }
+
+  .mkt-faq-panel {
+    border-radius: var(--mkt-radius-card);
+    border: 1px solid var(--mkt-panel-border);
+    background: var(--mkt-field-elevated);
+  }
+
+  .mkt-link {
+    color: var(--mkt-ink);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .mkt-link:hover {
+    text-decoration: underline;
+  }
+
+  .mkt-link-muted {
+    color: var(--mkt-ink-muted);
+  }
+
+  .mkt-link-muted:hover {
+    color: var(--mkt-ink);
   }
 
   .text-body {
@@ -202,6 +239,71 @@
     box-shadow:
       var(--shadow-lg),
       0 0 28px -6px hsl(var(--glow-primary) / 0.25);
+  }
+
+  .marketing-page .marketing-card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px -12px rgb(26 18 14 / 0.45);
+  }
+
+  .mkt-review-float {
+    box-shadow:
+      0 4px 6px -2px rgb(26 18 14 / 0.2),
+      0 16px 40px -8px rgb(26 18 14 / 0.35);
+  }
+
+  .mkt-hero-scrim {
+    background: linear-gradient(
+      to top,
+      rgb(26 18 14 / 0.92) 0%,
+      rgb(26 18 14 / 0.62) 45%,
+      rgb(26 18 14 / 0.25) 70%,
+      transparent 85%
+    );
+  }
+
+  @media (min-width: 960px) {
+    .mkt-hero-scrim {
+      background: linear-gradient(
+        to right,
+        rgb(26 18 14 / 0.88) 0%,
+        rgb(26 18 14 / 0.72) 28%,
+        rgb(26 18 14 / 0.35) 48%,
+        transparent 68%
+      );
+    }
+  }
+
+  /* Brighter outdoor hero (event-crowd) — stronger type scrim, lighter right fade */
+  .mkt-hero-scrim-event {
+    background: linear-gradient(
+      to top,
+      rgb(26 18 14 / 0.94) 0%,
+      rgb(26 18 14 / 0.78) 38%,
+      rgb(26 18 14 / 0.42) 62%,
+      rgb(26 18 14 / 0.12) 82%,
+      transparent 100%
+    );
+  }
+
+  @media (min-width: 960px) {
+    .mkt-hero-scrim-event {
+      background:
+        linear-gradient(
+          to right,
+          rgb(26 18 14 / 0.92) 0%,
+          rgb(26 18 14 / 0.82) 32%,
+          rgb(26 18 14 / 0.48) 46%,
+          rgb(26 18 14 / 0.18) 58%,
+          transparent 72%
+        ),
+        linear-gradient(
+          to top,
+          transparent 0%,
+          transparent 55%,
+          rgb(26 18 14 / 0.22) 100%
+        );
+    }
   }
 }
 
