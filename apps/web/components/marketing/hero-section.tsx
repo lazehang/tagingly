@@ -11,9 +11,9 @@ export function HeroSection() {
         <div className="relative min-h-[52svh] overflow-hidden rounded-[var(--mkt-radius-stage)] min-[960px]:min-h-[75svh]">
           <MarketingImage
             src="/marketing/hero-stage.jpg"
-            alt="Guests at a warm evening event"
+            alt="Guests at an evening pavilion reception, one guest photographing the celebration with a phone"
             priority
-            className="object-[42%_center] min-[960px]:object-[38%_center]"
+            className="object-cover object-[18%_42%] min-[960px]:object-[22%_45%]"
           />
           <div className="mkt-hero-scrim pointer-events-none absolute inset-0" aria-hidden />
           <div className="relative flex min-h-[inherit] flex-col justify-end gap-8 p-5 min-[960px]:grid min-[960px]:grid-cols-[minmax(0,42%)_1fr] min-[960px]:items-end min-[960px]:gap-6 min-[960px]:p-8 lg:p-10">

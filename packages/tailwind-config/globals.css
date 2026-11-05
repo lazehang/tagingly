@@ -255,9 +255,10 @@
   .mkt-hero-scrim {
     background: linear-gradient(
       to top,
-      rgb(26 18 14 / 0.88) 0%,
-      rgb(26 18 14 / 0.55) 42%,
-      transparent 72%
+      rgb(26 18 14 / 0.92) 0%,
+      rgb(26 18 14 / 0.62) 45%,
+      rgb(26 18 14 / 0.25) 70%,
+      transparent 85%
     );
   }
 
@@ -265,9 +266,10 @@
     .mkt-hero-scrim {
       background: linear-gradient(
         to right,
-        rgb(26 18 14 / 0.78) 0%,
-        rgb(26 18 14 / 0.45) 38%,
-        transparent 62%
+        rgb(26 18 14 / 0.88) 0%,
+        rgb(26 18 14 / 0.72) 28%,
+        rgb(26 18 14 / 0.35) 48%,
+        transparent 68%
       );
     }
   }

@@ -30,7 +30,7 @@ const steps = [
     description:
       "Attendees register with selfies and see only the photos they appear in—browse, fix mistakes, download.",
     image: "/marketing/guest-gallery.jpg",
-    alt: "Hands holding a phone open to a private gallery of event photos of one attendee",
+    alt: "Guest at a pavilion reception raising a smartphone to capture photos of the dance floor",
     showAiChip: false,
   },
 ] as const;
@@ -216,8 +216,8 @@ export default function HomePage() {
                 <div className="relative min-h-[280px] overflow-hidden rounded-[var(--mkt-radius-stage)] min-[900px]:min-h-[360px]">
                   <MarketingImage
                     src="/marketing/hero-event.jpg"
-                    alt="Guest at a wedding reception showing a private event photo gallery on her phone"
-                    className="object-[center_40%]"
+                    alt="Warmly lit pavilion reception with guests mingling and capturing event photos"
+                    className="object-[55%_40%]"
                   />
                 </div>
                 <article
