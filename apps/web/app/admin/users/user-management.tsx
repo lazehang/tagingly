@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@repo/ui/button";
-import { Input } from "@repo/ui/input";
 import { publicApiBase } from "@/lib/api";
 import type { EventDto, UserPublicDto, UserRole } from "@repo/types";
 

@@ -2,7 +2,11 @@
 
 **Tagingly** is an AI-powered event photo platform (this monorepo): organizers create events and upload crowd photos; attendees register from a shareable event page with selfies; the API detects faces, matches them to embeddings in **Weaviate**, and stores originals on **local disk** or **Backblaze B2**. Attendees see a gallery of shots they appear in via signed URLs.
 
+This repository is **open-core**: source is [MIT-licensed](LICENSE) (see [`NOTICE`](NOTICE) for third-party components). The npm workspaces remain `"private": true` so packages are not published to npm; you may still use, fork, and self-host the code. A **hosted SaaS** product may be offered separately and is not defined in this repo.
+
 Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **@vladmandic/face-api** + **TensorFlow.js Node**, and **Auth.js** (NextAuth v5) for credentials-based sign-in.
+
+Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md) · Security: [`SECURITY.md`](SECURITY.md) · Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
 ## Requirements
 
@@ -49,10 +53,10 @@ Optional for production uploads: a **Backblaze B2** bucket and S3-compatible cre
    cd apps/api && npx prisma db push && npm run db:seed
    ```
 
-   Default admin (override with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` in `apps/api/.env` before seeding):
+   Default admin for **local development only** (override with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` in `apps/api/.env` before seeding; same values in [`.env.example`](.env.example) and [`apps/api/prisma/seed.ts`](apps/api/prisma/seed.ts)):
 
    - Email: `admin@example.com`
-   - Password: `change-me-admin` (from `.env.example`)
+   - Password: `change-me-admin` — **never use on any network-exposed deployment** ([`SECURITY.md`](SECURITY.md))
 
 5. **Configure the web app** — create `apps/web/.env.local`:
 
@@ -99,17 +103,18 @@ See [`.env.example`](.env.example) for the full list. Summary:
 
 **API (`apps/api/.env`)**
 
-- `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`
-- `WEAVIATE_URL` (default `http://localhost:8080` with Compose)
+- `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN` (default `http://localhost:3001` when unset — matches the web dev server)
+- `WEAVIATE_URL` (default `http://localhost:8081` — host port mapped in [`docker-compose.yml`](docker-compose.yml))
 - Storage: `USE_LOCAL_STORAGE=true` **or** B2 (`B2_*`, `B2_ENDPOINT`, etc.)
 - `API_PUBLIC_URL` — optional; base URL embedded in local signed blob links (defaults to `http://localhost:${PORT}`)
 - `SIGNED_URL_TTL_SECONDS`
-- Matching policy (false-positive minimizing):
-  - `MATCH_MIN_CERTAINTY` (default `0.78`)
-  - `MATCH_MIN_MARGIN` (default `0.16`)
+- Matching policy (false-positive minimizing; defaults in [`apps/api/src/env.ts`](apps/api/src/env.ts)):
+  - `MATCH_MIN_CERTAINTY` (default `0.82`)
+  - `MATCH_MIN_MARGIN` (default `0.18`)
   - `MATCH_MIN_FACE_AREA` (default `6400`)
-  - `MATCH_MIN_DETECTION_SCORE` (default `0.85`)
-  - `MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE` (default `0.86`)
+  - `MATCH_MIN_DETECTION_SCORE` (default `0.88`)
+  - `MATCH_MIN_CERTAINTY_SINGLE_CANDIDATE` (default `0.9`)
+- Photo pipeline (memory): `PHOTO_PROCESS_CONCURRENCY` (default `1`), `PHOTO_MAX_IMAGE_DIMENSION` (default `1280`), upload limits — see [Low-memory demo](#low-memory-demo-optional) below
 
 **Web (`apps/web/.env.local`)**
 
@@ -140,7 +145,7 @@ OAuth providers are not wired to the Express API in the default setup; sign-in i
 
 ## Docker
 
-- [`docker-compose.yml`](docker-compose.yml) — **postgres** (16) and **weaviate** (1.27) with volumes.
+- [`docker-compose.yml`](docker-compose.yml) — **postgres** (16) and **weaviate** (1.27) with volumes. Weaviate is published on host port **8081** (`8081:8080`).
 - [`apps/api/Dockerfile`](apps/api/Dockerfile) — example production image; build from repo root:  
   `docker build -f apps/api/Dockerfile .`
 
@@ -152,7 +157,7 @@ Production is **three moving parts** plus data services: the **Next.js app** (`a
 
 | Component | Typical hosting | Notes |
 |-----------|-----------------|--------|
-| **Web** | [Vercel](https://vercel.com), [Netlify](https://www.netlify.com), or any Node host | Stateless; set env vars in the provider UI. Use the **public** site URL for `NEXTAUTH_URL`. |
+| **Web** | [Vercel](https://vercel.com), [Cloudflare Pages](https://pages.cloudflare.com), or any Node host | Stateless; set env vars in the provider UI. Use the **public** site URL for `NEXTAUTH_URL`. Build from monorepo root (`npm run build --workspace=web`). |
 | **API** | **Docker** on a VM, [Fly.io](https://fly.io), [Railway](https://railway.app), [Render](https://render.com), [Google Cloud Run](https://cloud.google.com/run) (with enough CPU/memory), etc. | Needs **Node ≥ 20** and **≥ 2 GB RAM** for face/TensorFlow workloads. Native libs (`canvas`, `tfjs-node`) use [`apps/api/Dockerfile`](apps/api/Dockerfile). |
 | **PostgreSQL** | [Neon](https://neon.tech), [Supabase](https://supabase.com), [RDS](https://aws.amazon.com/rds/), [Cloud SQL](https://cloud.google.com/sql), managed Postgres on your host | Put the connection string in `DATABASE_URL`. Prefer **`prisma migrate deploy`** for production schema changes (add migrations when you move beyond `db push`). |
 | **Weaviate** | [Weaviate Cloud](https://weaviate.io/cloud), or self-hosted ([Docker](https://weaviate.io/developers/weaviate/installation/docker-compose)) | Set `WEAVIATE_URL` (and `WEAVIATE_API_KEY` if the cluster requires it). The API creates the `FaceEmbedding` class on startup. |
@@ -202,7 +207,7 @@ Or `npm run build` at the root to run Turbo `build` for all packages that define
 1. Create Postgres (e.g. Railway Postgres or Neon), enable **Prisma Accelerate** on that database in [Prisma Data Platform](https://console.prisma.io/), and provision Weaviate Cloud + B2.
 2. In **Railway**, create a service for the API from this repo (Dockerfile path `apps/api/Dockerfile`, build context = repo root — see below).
 3. Set API variables (see **Railway (API service)** below). Deploy and copy the public API URL (`https://….up.railway.app`).
-4. Deploy **web** (e.g. Netlify) with `NEXT_PUBLIC_API_URL` / `API_URL` pointing at the Railway API URL; set API `CORS_ORIGIN` to the web origin.
+4. Deploy **web** on Vercel (or your Node host) with `NEXT_PUBLIC_API_URL` / `API_URL` pointing at the Railway API URL; set API `CORS_ORIGIN` to the web origin.
 
 ### Railway (API service)
 
@@ -225,7 +230,7 @@ The Dockerfile runs `npm run build -w api`, which uses `prisma generate --no-eng
 | `DATABASE_URL` | Prisma Accelerate URL: `prisma+postgres://accelerate.prisma-data.net/?api_key=…` |
 | `DIRECT_URL` (optional) | Direct Postgres URL for one-off `db push` / seed in shell (see below); not required for the running app |
 | `JWT_SECRET` | Long random secret |
-| `CORS_ORIGIN` | Your web app origin, e.g. `https://your-site.netlify.app` |
+| `CORS_ORIGIN` | Your web app origin, e.g. `https://app.example.com` |
 | `WEAVIATE_URL`, `WEAVIATE_API_KEY` | Weaviate Cloud |
 | `USE_LOCAL_STORAGE` | `false` |
 | `B2_*` | Backblaze B2 S3 credentials |
@@ -275,3 +280,22 @@ If initialization fails, photo processing falls back to marking photos as failed
 - **Weaviate errors** — ensure Compose is up and `WEAVIATE_URL` matches; the API creates the `FaceEmbedding` class on startup.
 - **NextAuth / “not callable”** — do not add a file named `next-auth.d.ts` at the web app root; it can shadow the real `next-auth` package. Session/JWT extensions live under [`apps/web/types/`](apps/web/types/).
 - **TypeScript “ambiguous project root” in `@repo/ui`** — `packages/ui/tsconfig.json` sets `rootDir: "src"`.
+
+## Low-memory demo (optional)
+
+The face pipeline (TensorFlow.js + canvas) is **memory-heavy**. For a small VPS or tight container, use conservative API settings in `apps/api/.env` (see [`.env.example`](.env.example)):
+
+- `PHOTO_PROCESS_CONCURRENCY=1` (do not raise above `1` below ~2 GB RAM)
+- `PHOTO_MAX_IMAGE_DIMENSION=768` (or `512` — reduces RAM but hurts distant faces in crowd shots)
+- `PHOTO_UPLOAD_MAX_FILE_MB=8`
+- `PHOTO_UPLOAD_MAX_FILES=4`
+
+Size the API container to **≥ 1.5 GB** (tuned) or **≥ 2 GB** (recommended). See [`apps/api/Dockerfile`](apps/api/Dockerfile) and troubleshooting above for OOM (`exit 137`).
+
+## License
+
+Source code in this repository is licensed under the [MIT License](LICENSE). Third-party components (TensorFlow.js, face-api weights, Weaviate, marketing images, fonts) are described in [`NOTICE`](NOTICE).
+
+## Security
+
+See [`SECURITY.md`](SECURITY.md) for vulnerability reporting and deployment warnings (seed admin, JWT secrets, public demos, rate limits).

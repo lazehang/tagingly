@@ -1,0 +1,49 @@
+name: Bug report
+description: Something is broken in Tagingly
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Do **not** include secrets, `.env` contents, or real attendee photos.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect vs what you saw?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. docker compose up -d
+        2. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      placeholder: main @ abc1234
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Web (Next.js)
+        - API / face pipeline
+        - Database / Prisma
+        - Weaviate / matching
+        - Deploy / Docker
+        - Other
+    validations:
+      required: true
