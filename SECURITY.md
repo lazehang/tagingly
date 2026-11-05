@@ -41,6 +41,6 @@ deployments as high-sensitivity systems.
 - **Lock down CORS** to your real web origin (`CORS_ORIGIN` on the API).
 - **HTTPS** for both web and API in production.
 
-See [`README.md`](README.md) operational checklist and [CONTRIBUTING.md](CONTRIBUTING.md)
-for local setup. Hosted SaaS (if offered separately) is not described in this
-repository.
+See [`README.md`](README.md#before-your-first-production-deploy) (production checklist)
+and [CONTRIBUTING.md](CONTRIBUTING.md) for local setup. Hosted SaaS (if offered
+separately) is not described in this repository.

@@ -1,12 +1,15 @@
 # Tagingly
 
-**Tagingly** is an AI-powered event photo platform (this monorepo): organizers create events and upload crowd photos; attendees register from a shareable event page with selfies; the API detects faces, matches them to embeddings in **Weaviate**, and stores originals on **local disk** or **Backblaze B2**. Attendees see a gallery of shots they appear in via signed URLs.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.9-brightgreen)](https://nodejs.org/)
 
-This repository is **open-core**: source is [MIT-licensed](LICENSE) (see [`NOTICE`](NOTICE) for third-party components). The npm workspaces remain `"private": true` so packages are not published to npm; you may still use, fork, and self-host the code. A **hosted SaaS** product may be offered separately and is not defined in this repo.
+**Tagingly** is an AI-powered event photo platform: organizers create events and upload crowd photos; attendees register from a shareable link with selfies; the API detects faces, matches embeddings in **Weaviate**, and stores originals on **local disk** or **Backblaze B2**. Attendees browse a gallery of shots they appear in via signed URLs.
 
-Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **YuNet + SFace** (OpenCV Zoo ONNX via **ONNX Runtime**), and **Auth.js** (NextAuth v5) for credentials-based sign-in.
+**Open-core:** source is [MIT-licensed](LICENSE) ([`NOTICE`](NOTICE) for third-party components). Workspaces stay `"private": true` (not published to npm); you may use, fork, and self-host. A **hosted SaaS** may be offered separately and is not defined in this repo.
 
-Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md) · Security: [`SECURITY.md`](SECURITY.md) · Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+**Stack:** [Turborepo](https://turbo.build/repo) · **Next.js** (App Router) · **Express** · **Prisma** / PostgreSQL · **Weaviate** · **YuNet + SFace** (OpenCV Zoo ONNX via **onnxruntime-node**) · **Auth.js** (NextAuth v5, email + password)
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) · [`SECURITY.md`](SECURITY.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
 ## Requirements
 
@@ -193,14 +196,19 @@ Or `npm run build` at the root to run Turbo `build` for all packages that define
 - `API_PUBLIC_URL` — **public base URL of this API** so JWT blob links in local-storage mode point somewhere valid; with B2, presigned URLs are generated instead
 - `PORT` — many PaaS set this automatically; bind the process to `process.env.PORT` (the template already uses `loadEnv().PORT`)
 
-### Operational checklist
+### Before your first production deploy
 
-1. **HTTPS** on both web and API in production.
-2. **CORS** — only allow your real front-end origin(s).
-3. **Secrets** — never commit `.env`; use provider secret managers.
-4. **Admin bootstrap** — run `db:seed` once in the deployment environment (or create admin via a one-off job); change default passwords immediately.
-5. **Face pipeline** — the API is CPU-heavy during uploads; size instances accordingly (or queue processing in a worker later).
-6. **Scaling the API** — multiple replicas are safe for HTTP **if** storage is **B2** (or shared object storage) and not local disk; Weaviate and Postgres are shared across instances.
+Use this checklist after you wire up web, API, Postgres, Weaviate, and object storage (no live demo URL ships with this repo—use your own domains):
+
+1. **HTTPS** on both the Next.js site and the API.
+2. **`CORS_ORIGIN`** on the API must match the web origin exactly (scheme + host, no trailing-slash mismatch).
+3. **Strong secrets** — long random `JWT_SECRET` and `AUTH_SECRET`; store env vars in the host’s secret manager, never in git.
+4. **Admin bootstrap** — **do not** run `db:seed` with default credentials on any network-exposed host. Set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_NAME` in the API env before a one-off seed, or create the admin another secure way ([`SECURITY.md`](SECURITY.md)).
+5. **Object storage** — use **Backblaze B2** (or compatible S3), not local disk, if you run more than one API replica or expect horizontal scale.
+6. **API memory** — **≥ 1024 MB** minimum; **≥ 2048 MB** recommended for large events and bulk reprocess (ONNX + canvas can OOM smaller instances).
+7. **YuNet / SFace cutover** — if upgrading from legacy face-api embeddings, run `npm run face:reindex --workspace=api` and **reprocess event photos** so tags use the new vector space ([migrating embeddings](#migrating-embeddings-face-api--sface) below).
+
+**Scaling:** multiple API replicas are safe when storage is shared object storage (not local disk) and Postgres + Weaviate are shared. The face pipeline is CPU-heavy during uploads—size instances or queue work accordingly.
 
 ### Example: Vercel (web) + Railway (API)
 
