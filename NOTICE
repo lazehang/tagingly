@@ -5,16 +5,26 @@ This project includes or depends on the following components. See also
 [`LICENSE`](LICENSE) for the MIT license applying to Tagingly source code
 written by the project authors.
 
-TensorFlow.js (@tensorflow/tfjs-node)
--------------------------------------
-Used by the API face pipeline. Licensed under the Apache License, Version 2.0.
-https://github.com/tensorflow/tfjs
+OpenCV Zoo — YuNet face detection (ONNX)
+----------------------------------------
+Used by the API face pipeline for bounding boxes and 5-point landmarks.
+Model file: `face_detection_yunet_2023mar.onnx` (see `apps/api/Dockerfile`).
+MIT License. https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet
 
-face-api.js / @vladmandic/face-api
-----------------------------------
-Face detection, landmarks, and recognition models used by the API (TensorFlow.js
-backend). MIT License. Model weights may be downloaded at build or runtime; see
-`apps/api/Dockerfile` and `apps/api/src/lib/face.ts`.
+OpenCV Zoo — SFace face recognition (ONNX)
+------------------------------------------
+Used by the API for 128-dimensional face embeddings.
+Model file: `face_recognition_sface_2021dec.onnx`.
+Apache License, Version 2.0.
+https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface
+
+ONNX Runtime (onnxruntime-node)
+-------------------------------
+Runs YuNet and SFace inference in Node.js. MIT License.
+https://github.com/microsoft/onnxruntime
+
+Legacy note: TensorFlow.js and @vladmandic/face-api were removed from the API
+in favor of the stack above. Do not mix old face-api embeddings with SFace vectors.
 
 Weaviate
 --------

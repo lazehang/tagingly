@@ -4,7 +4,7 @@
 
 This repository is **open-core**: source is [MIT-licensed](LICENSE) (see [`NOTICE`](NOTICE) for third-party components). The npm workspaces remain `"private": true` so packages are not published to npm; you may still use, fork, and self-host the code. A **hosted SaaS** product may be offered separately and is not defined in this repo.
 
-Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **@vladmandic/face-api** + **TensorFlow.js Node**, and **Auth.js** (NextAuth v5) for credentials-based sign-in.
+Built with [Turborepo](https://turbo.build/repo), **Next.js** (App Router), **Express**, **Prisma** (PostgreSQL), **YuNet + SFace** (OpenCV Zoo ONNX via **ONNX Runtime**), and **Auth.js** (NextAuth v5) for credentials-based sign-in.
 
 Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md) · Security: [`SECURITY.md`](SECURITY.md) · Code of conduct: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
@@ -268,13 +268,40 @@ Exact clicks differ per provider; the invariants are **public API URL**, **match
 
 ## Face recognition and native dependencies
 
-The API uses **@tensorflow/tfjs-node**, **@vladmandic/face-api**, and **canvas**. On macOS you may need [system deps for `canvas`](https://github.com/Automattic/node-canvas#compiling); first run downloads model weights into `apps/api/face-models/` (gitignored).
+The API detects faces with **YuNet** and embeds them with **SFace** (128-d, L2-normalized) using **onnxruntime-node** and **canvas** for decode/alignment. Model files live in `apps/api/face-models/` (gitignored). On first run the API can download ONNX files from [OpenCV Zoo](https://github.com/opencv/opencv_zoo); Docker images bake them at build time (see [`apps/api/Dockerfile`](apps/api/Dockerfile)).
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `FACE_MODELS_DIR` | `face-models` (under API cwd) | ONNX directory |
+| `FACE_YUNET_MODEL` | `face_detection_yunet_2023mar.onnx` | Detector filename |
+| `FACE_SFACE_MODEL` | `face_recognition_sface_2021dec.onnx` | Embedder filename |
+| `FACE_YUNET_SCORE_THRESHOLD` | `0.6` | YuNet decode threshold |
+| `FACE_MODELS_REQUIRED` | `false` | Fail if ONNX missing instead of downloading |
+
+Licenses: YuNet **MIT**, SFace **Apache-2.0**, ONNX Runtime **MIT** — see [`NOTICE`](NOTICE).
+
+**RAM:** ONNX + canvas typically uses **much less memory** than the old TensorFlow face-api stack (~1.5–2 GB). **512 MB–1 GB** containers often work for `PHOTO_PROCESS_CONCURRENCY=1`; use **≥1024 MB** if you see OOM during large uploads.
+
+On macOS you may need [system deps for `canvas`](https://github.com/Automattic/node-canvas#compiling).
 
 If initialization fails, photo processing falls back to marking photos as failed; check API logs.
 
+### Migrating embeddings (face-api → SFace)
+
+SFace vectors are **not comparable** to legacy face-api 128-d vectors (same length, different space). After upgrading:
+
+1. Deploy the new API build.
+2. Wipe and rebuild Weaviate selfie embeddings:
+   ```bash
+   npm run face:reindex --workspace=api
+   ```
+   Use `--dry-run` to print counts only.
+3. **Reprocess event photos** (admin reprocess or your queue) so proposed/confirmed tags use the new space.
+4. Optionally retune `MATCH_MIN_DETECTION_SCORE` if YuNet scores differ from the old SSD detector (defaults unchanged in code).
+
 ## Troubleshooting
 
-- **Railway / Docker exit code 137 (`Killed`) or `SIGTERM` during reprocess** — Linux **OOM** killed the Node process (TensorFlow + canvas + image buffers can exceed **512 MB** default Railway RAM). Fix: Railway → API service → **Settings** → **Memory ≥ 2048 MB** (4096 MB for large events). Keep `PHOTO_PROCESS_CONCURRENCY=1`. Photos are processed **one at a time**; bulk reprocess queues in the background. `SIGTERM` on deploy is normal; the API drains the queue before exit. Deprecation lines (`util.isArray`) come from older TF/face-api deps and are harmless. Check `GET /health` for `memoryMb` and `photoQueue` while debugging.
+- **Railway / Docker exit code 137 (`Killed`) or `SIGTERM` during reprocess** — Linux **OOM** killed the Node process (ONNX Runtime + canvas + image buffers can still spike RAM). Fix: raise API service memory (**≥1024 MB**, **2048 MB** for large events). Keep `PHOTO_PROCESS_CONCURRENCY=1`. Photos are processed **one at a time**; bulk reprocess queues in the background. `SIGTERM` on deploy is normal; the API drains the queue before exit. Check `GET /health` for `memoryMb` and `photoQueue` while debugging.
 - **CORS errors** — set `CORS_ORIGIN` on the API to the exact web origin (e.g. `http://localhost:3001`).
 - **Prisma P6001 (`prisma://` URL required)** — regenerate the client with the query engine: `cd apps/api && npx prisma generate`. Local dev should use `postgresql://…` in `DATABASE_URL`, not Accelerate, unless you configure Accelerate intentionally.
 - **Weaviate errors** — ensure Compose is up and `WEAVIATE_URL` matches; the API creates the `FaceEmbedding` class on startup.

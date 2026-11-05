@@ -1,39 +1,70 @@
 import path from "node:path";
 import { existsSync, mkdirSync } from "node:fs";
-import type { Image } from "canvas";
+import type { Canvas, Image } from "canvas";
+import * as ort from "onnxruntime-node";
 import { loadEnv } from "../env.js";
 import { l2Normalize } from "./faceVectors.js";
+import { alignFaceTo112 } from "./faceAlign.js";
+import { detectFacesYunet } from "./yunetDetect.js";
 
-const MODEL_FILES = [
-  "ssd_mobilenetv1_model-weights_manifest.json",
-  "ssd_mobilenetv1_model-shard1",
-  "ssd_mobilenetv1_model-shard2",
-  "face_landmark_68_model-weights_manifest.json",
-  "face_landmark_68_model-shard1",
-  "face_recognition_model-weights_manifest.json",
-  "face_recognition_model-shard1",
-  "face_recognition_model-shard2",
+const OPENCV_ZOO_BASE =
+  "https://github.com/opencv/opencv_zoo/raw/main/models";
+
+const MODEL_SPECS = [
+  {
+    envFile: "FACE_YUNET_MODEL" as const,
+    defaultName: "face_detection_yunet_2023mar.onnx",
+    zooPath: "face_detection_yunet/face_detection_yunet_2023mar.onnx",
+  },
+  {
+    envFile: "FACE_SFACE_MODEL" as const,
+    defaultName: "face_recognition_sface_2021dec.onnx",
+    zooPath: "face_recognition_sface/face_recognition_sface_2021dec.onnx",
+  },
 ];
 
-let faceApiReady = false;
-let faceApiInit: Promise<void> | null = null;
+let modelsReady = false;
+let modelsInit: Promise<void> | null = null;
 
 type FaceRuntime = {
-  faceapi: typeof import("@vladmandic/face-api");
   canvas: typeof import("canvas");
   loadImage: (buffer: Buffer) => Promise<Image>;
 };
 
 let runtime: FaceRuntime | null = null;
+let yunetSession: ort.InferenceSession | null = null;
+let sfaceSession: ort.InferenceSession | null = null;
 
-async function ensureModels(dir: string): Promise<void> {
+function resolveModelsDir(): string {
+  const env = loadEnv();
+  const dir = env.FACE_MODELS_DIR ?? "face-models";
+  return path.isAbsolute(dir) ? dir : path.join(process.cwd(), dir);
+}
+
+function modelPath(filename: string): string {
+  return path.join(resolveModelsDir(), filename);
+}
+
+async function ensureModelsOnDisk(): Promise<void> {
+  const env = loadEnv();
+  const dir = resolveModelsDir();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  const base =
-    "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights";
-  for (const f of MODEL_FILES) {
-    const dest = path.join(dir, f);
+
+  for (const spec of MODEL_SPECS) {
+    const filename =
+      spec.envFile === "FACE_YUNET_MODEL"
+        ? env.FACE_YUNET_MODEL
+        : env.FACE_SFACE_MODEL;
+    const dest = path.join(dir, filename);
     if (existsSync(dest)) continue;
-    const url = `${base}/${f}`;
+
+    if (env.FACE_MODELS_REQUIRED) {
+      throw new Error(
+        `Missing face model ${dest} (FACE_MODELS_REQUIRED=true)`
+      );
+    }
+
+    const url = `${OPENCV_ZOO_BASE}/${spec.zooPath}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to download ${url}`);
     const buf = Buffer.from(await res.arrayBuffer());
@@ -43,103 +74,156 @@ async function ensureModels(dir: string): Promise<void> {
 
 async function loadRuntime(): Promise<FaceRuntime> {
   if (runtime) return runtime;
-  await import("@tensorflow/tfjs-node");
-  const [faceapi, canvas] = await Promise.all([
-    import("@vladmandic/face-api"),
-    import("canvas"),
-  ]);
-  faceapi.env.monkeyPatch({
-    Canvas: canvas.Canvas as never,
-    Image: canvas.Image as never,
-    ImageData: canvas.ImageData as never,
-  });
-  runtime = { faceapi, canvas, loadImage: canvas.loadImage };
+  const canvas = await import("canvas");
+  runtime = { canvas, loadImage: canvas.loadImage };
   return runtime;
 }
 
-export async function initFaceApi(): Promise<void> {
-  if (faceApiReady) return;
-  if (!faceApiInit) {
-    faceApiInit = (async () => {
-      const { faceapi } = await loadRuntime();
-      const modelDir = path.join(process.cwd(), "face-models");
-      await ensureModels(modelDir);
-      await faceapi.nets.ssdMobilenetv1.loadFromDisk(modelDir);
-      await faceapi.nets.faceLandmark68Net.loadFromDisk(modelDir);
-      await faceapi.nets.faceRecognitionNet.loadFromDisk(modelDir);
-      faceApiReady = true;
-    })();
+async function createSessions(): Promise<void> {
+  const env = loadEnv();
+  const yunetPath = modelPath(env.FACE_YUNET_MODEL);
+  const sfacePath = modelPath(env.FACE_SFACE_MODEL);
+  if (!existsSync(yunetPath) || !existsSync(sfacePath)) {
+    throw new Error(
+      `Face ONNX models not found under ${resolveModelsDir()} (expected ${env.FACE_YUNET_MODEL} and ${env.FACE_SFACE_MODEL})`
+    );
   }
-  await faceApiInit;
+  yunetSession = await ort.InferenceSession.create(yunetPath);
+  sfaceSession = await ort.InferenceSession.create(sfacePath);
 }
 
-type FaceDetectionImage = { image: Image; pixelScale: number };
+export async function initFaceModels(): Promise<void> {
+  if (modelsReady) return;
+  if (!modelsInit) {
+    modelsInit = (async () => {
+      await ensureModelsOnDisk();
+      await createSessions();
+      modelsReady = true;
+      console.info(
+        `[face] YuNet + SFace ready (embedding model: sface-2021dec, dir: ${resolveModelsDir()})`
+      );
+    })();
+  }
+  await modelsInit;
+}
 
-async function loadImageForFaceDetection(
+/** @deprecated Use initFaceModels — kept for call-site compatibility. */
+export const initFaceApi = initFaceModels;
+
+async function embedAlignedFace(alignedChw: Float32Array): Promise<Float32Array> {
+  if (!sfaceSession) throw new Error("SFace session not loaded");
+  const tensor = new ort.Tensor("float32", alignedChw, [1, 3, 112, 112]);
+  const out = await sfaceSession.run({ data: tensor });
+  const fc1 = out.fc1!;
+  const raw = fc1.data as Float32Array;
+  return new Float32Array(l2Normalize(raw));
+}
+
+type FaceDetectionImage = {
+  canvas: Canvas;
+  pixelScale: number;
+};
+
+async function loadCanvasForFaceDetection(
   buffer: Buffer
 ): Promise<FaceDetectionImage> {
   const { loadImage, canvas } = await loadRuntime();
   const img = await loadImage(buffer);
   const maxDim = loadEnv().PHOTO_MAX_IMAGE_DIMENSION;
   const longest = Math.max(img.width, img.height);
-  if (longest <= maxDim) return { image: img, pixelScale: 1 };
-
-  const pixelScale = maxDim / longest;
-  const w = Math.max(1, Math.round(img.width * pixelScale));
-  const h = Math.max(1, Math.round(img.height * pixelScale));
+  let pixelScale = 1;
+  let w = img.width;
+  let h = img.height;
+  if (longest > maxDim) {
+    pixelScale = maxDim / longest;
+    w = Math.max(1, Math.round(img.width * pixelScale));
+    h = Math.max(1, Math.round(img.height * pixelScale));
+  }
   const surface = canvas.createCanvas(w, h);
   const ctx = surface.getContext("2d");
-  if (!ctx) return { image: img, pixelScale: 1 };
+  if (!ctx) {
+    const c = canvas.createCanvas(img.width, img.height);
+    c.getContext("2d")?.drawImage(img as never, 0, 0);
+    return { canvas: c, pixelScale: 1 };
+  }
   ctx.drawImage(img as never, 0, 0, w, h);
-  const scaled = await loadImage(surface.toBuffer("image/jpeg"));
-  return { image: scaled, pixelScale };
+  return { canvas: surface, pixelScale };
+}
+
+async function detectAndEmbed(
+  buffer: Buffer,
+  singleFace: boolean
+): Promise<
+  Array<{ descriptor: Float32Array; faceArea: number; score: number }>
+> {
+  await initFaceModels();
+  if (!yunetSession) throw new Error("YuNet session not loaded");
+
+  const env = loadEnv();
+  const { canvas, pixelScale } = await loadCanvasForFaceDetection(buffer);
+  const areaScale = pixelScale * pixelScale;
+
+  const detected = await detectFacesYunet({
+    session: yunetSession,
+    sourceCanvas: canvas,
+    scoreThreshold: env.FACE_YUNET_SCORE_THRESHOLD,
+    nmsThreshold: env.FACE_YUNET_NMS_THRESHOLD,
+    topK: env.FACE_YUNET_TOP_K,
+    areaScale,
+  });
+
+  const picked = singleFace
+    ? detected.length
+      ? [detected.sort((a, b) => b.score - a.score)[0]!]
+      : []
+    : detected;
+
+  const results: Array<{
+    descriptor: Float32Array;
+    faceArea: number;
+    score: number;
+  }> = [];
+
+  for (const face of picked) {
+    const aligned = alignFaceTo112(canvas, face.row);
+    const descriptor = await embedAlignedFace(aligned);
+    results.push({
+      descriptor,
+      faceArea: face.faceArea,
+      score: face.score,
+    });
+  }
+  return results;
 }
 
 export async function descriptorFromSelfieImage(
   buffer: Buffer
 ): Promise<Float32Array | null> {
-  await initFaceApi();
-  const { faceapi } = await loadRuntime();
-  const { image } = await loadImageForFaceDetection(buffer);
-  const det = await faceapi
-    .detectSingleFace(image as never)
-    .withFaceLandmarks()
-    .withFaceDescriptor();
-  if (!det?.descriptor) return null;
-  return new Float32Array(l2Normalize(det.descriptor));
+  const faces = await detectAndEmbed(buffer, true);
+  return faces[0]?.descriptor ?? null;
 }
 
 export async function descriptorsFromEventPhoto(
   buffer: Buffer
 ): Promise<Array<{ descriptor: Float32Array; faceArea: number; score: number }>> {
-  await initFaceApi();
-  const { faceapi } = await loadRuntime();
-  const { image, pixelScale } = await loadImageForFaceDetection(buffer);
-  const dets = await faceapi
-    .detectAllFaces(image as never)
-    .withFaceLandmarks()
-    .withFaceDescriptors();
-  const areaScale = pixelScale * pixelScale;
-  return dets.map((d) => ({
-    descriptor: new Float32Array(l2Normalize(d.descriptor)),
-    faceArea: Math.max(
-      0,
-      (d.detection.box.width * d.detection.box.height) / areaScale
-    ),
-    score: d.detection.score ?? 0,
-  }));
+  return detectAndEmbed(buffer, false);
 }
 
-/** Best-effort cleanup between queued jobs (TensorFlow.js retains tensors otherwise). */
+/** Best-effort cleanup between queued jobs. */
 export function releaseFacePipelineMemory(): void {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const tf = require("@tensorflow/tfjs-node") as {
-      disposeVariables?: () => void;
-    };
-    tf.disposeVariables?.();
-  } catch {
-    /* tfjs-node not loaded yet */
-  }
   if (global.gc) global.gc();
+}
+
+/** Dispose ORT sessions (tests / shutdown). */
+export async function disposeFaceModels(): Promise<void> {
+  if (yunetSession) {
+    await yunetSession.release();
+    yunetSession = null;
+  }
+  if (sfaceSession) {
+    await sfaceSession.release();
+    sfaceSession = null;
+  }
+  modelsReady = false;
+  modelsInit = null;
 }
