@@ -5,10 +5,19 @@ import { MarketingImage } from "@/components/marketing/marketing-image";
 type ReviewStageMockProps = {
   floating?: boolean;
   className?: string;
+  thumbSrc?: string;
+  thumbAlt?: string;
+  thumbClassName?: string;
 };
 
 /** Marketing-only review UI mock (`data-ui`). Fictional guest — not live product chrome. */
-export function ReviewStageMock({ floating = false, className }: ReviewStageMockProps) {
+export function ReviewStageMock({
+  floating = false,
+  className,
+  thumbSrc = "/marketing/event-crowd.jpg",
+  thumbAlt = "Crop of an event photo awaiting tag review",
+  thumbClassName = "object-[center_35%]",
+}: ReviewStageMockProps) {
   return (
     <article
       data-ui
@@ -23,11 +32,7 @@ export function ReviewStageMock({ floating = false, className }: ReviewStageMock
         <AiChip />
       </div>
       <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-lg ring-1 ring-[var(--mkt-cream-ink)]/10">
-        <MarketingImage
-          src="/marketing/event-crowd.jpg"
-          alt="Crop of an event photo awaiting tag review"
-          className="object-[center_35%]"
-        />
+        <MarketingImage src={thumbSrc} alt={thumbAlt} className={thumbClassName} />
         <div
           className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-[var(--mkt-match-line)] ring-inset"
           aria-hidden

@@ -273,6 +273,38 @@
       );
     }
   }
+
+  /* Brighter outdoor hero (event-crowd) — stronger type scrim, lighter right fade */
+  .mkt-hero-scrim-event {
+    background: linear-gradient(
+      to top,
+      rgb(26 18 14 / 0.94) 0%,
+      rgb(26 18 14 / 0.78) 38%,
+      rgb(26 18 14 / 0.42) 62%,
+      rgb(26 18 14 / 0.12) 82%,
+      transparent 100%
+    );
+  }
+
+  @media (min-width: 960px) {
+    .mkt-hero-scrim-event {
+      background:
+        linear-gradient(
+          to right,
+          rgb(26 18 14 / 0.92) 0%,
+          rgb(26 18 14 / 0.82) 32%,
+          rgb(26 18 14 / 0.48) 46%,
+          rgb(26 18 14 / 0.18) 58%,
+          transparent 72%
+        ),
+        linear-gradient(
+          to top,
+          transparent 0%,
+          transparent 55%,
+          rgb(26 18 14 / 0.22) 100%
+        );
+    }
+  }
 }
 
 @keyframes marketing-float {

@@ -1,11 +1,16 @@
 Tagingly marketing photographs
 ==============================
 
-hero-stage.jpg
+event-crowd.jpg (also marketing homepage hero photo stage)
+  AI-generated. Outdoor group with illustrative face-suggestion chrome
+  (no real match scores). Generated 2026-11-05 (PR #4). Hero stage, step 2,
+  and ReviewStageMock crops reference this file directly.
+
+hero-stage.jpg (optional / unused in UI)
   Unsplash License — Fotógrafo Samuel Cruz (@fotografosamuelcruz)
   "People celebrating at a dimly lit outdoor party event"
   https://unsplash.com/photos/people-celebrating-at-a-dimly-lit-outdoor-party-event-wGqjddDDkFQ
-  Downloaded 2026-11-05 for Tagingly marketing homepage hero stage.
+  Downloaded 2026-11-05; superseded by event-crowd.jpg for the homepage hero.
 
 hero-event.jpg
   Derivative crop from hero-stage.jpg (same Unsplash photo and license as above).
@@ -19,11 +24,6 @@ organizer-upload.jpg
   AI-generated. Organizer laptop bulk-upload grid of event thumbnails.
   Generated 2026-11-05 (PR #4). Replace with stock when a suitable upload UI
   photograph is sourced.
-
-event-crowd.jpg
-  AI-generated. Outdoor group with illustrative face-suggestion chrome
-  (no real match scores). Generated 2026-11-05 (PR #4). Used for ReviewStageMock
-  crop and step 2 until replaced with stock.
 
 Removed / superseded
 --------------------
