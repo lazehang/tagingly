@@ -13,7 +13,7 @@
     "db:generate": "prisma generate",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "test": "node --import tsx --test src/lib/**/*.test.ts",
+    "test": "node --import tsx --test src/lib/faceVectors.test.ts src/lib/matchPolicy.test.ts",
     "face:reindex": "tsx scripts/face-reindex.ts"
   },
   "dependencies": {

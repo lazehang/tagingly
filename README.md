@@ -158,7 +158,7 @@ Production is **three moving parts** plus data services: the **Next.js app** (`a
 | Component | Typical hosting | Notes |
 |-----------|-----------------|--------|
 | **Web** | [Vercel](https://vercel.com), [Cloudflare Pages](https://pages.cloudflare.com), or any Node host | Stateless; set env vars in the provider UI. Use the **public** site URL for `NEXTAUTH_URL`. Build from monorepo root (`npm run build --workspace=web`). |
-| **API** | **Docker** on a VM, [Fly.io](https://fly.io), [Railway](https://railway.app), [Render](https://render.com), [Google Cloud Run](https://cloud.google.com/run) (with enough CPU/memory), etc. | Needs **Node ≥ 20** and **≥ 2 GB RAM** for face/TensorFlow workloads. Native libs (`canvas`, `tfjs-node`) use [`apps/api/Dockerfile`](apps/api/Dockerfile). |
+| **API** | **Docker** on a VM, [Fly.io](https://fly.io), [Railway](https://railway.app), [Render](https://render.com), [Google Cloud Run](https://cloud.google.com/run) (with enough CPU/memory), etc. | Needs **Node ≥ 20**; **≥ 1024 MB RAM** ( **≥ 2048 MB** for large events). Native libs (`canvas`, ONNX Runtime) — see [`apps/api/Dockerfile`](apps/api/Dockerfile). |
 | **PostgreSQL** | [Neon](https://neon.tech), [Supabase](https://supabase.com), [RDS](https://aws.amazon.com/rds/), [Cloud SQL](https://cloud.google.com/sql), managed Postgres on your host | Put the connection string in `DATABASE_URL`. Prefer **`prisma migrate deploy`** for production schema changes (add migrations when you move beyond `db push`). |
 | **Weaviate** | [Weaviate Cloud](https://weaviate.io/cloud), or self-hosted ([Docker](https://weaviate.io/developers/weaviate/installation/docker-compose)) | Set `WEAVIATE_URL` (and `WEAVIATE_API_KEY` if the cluster requires it). The API creates the `FaceEmbedding` class on startup. |
 | **File storage** | **Backblaze B2** (S3-compatible) recommended | Set `USE_LOCAL_STORAGE=false` (or unset) and configure all `B2_*` variables. Without B2, the API falls back to disk under `apps/api/data/blob`, which does not scale across replicas unless you use a shared volume. |
@@ -237,8 +237,6 @@ The Dockerfile runs `npm run build -w api`, which uses `prisma generate --no-eng
 | `PORT` | Railway sets this automatically |
 | **Memory (Railway)** | **≥ 2048 MB** recommended for the API service |
 
-Optional: `TF_CPP_MIN_LOG_LEVEL=2` to suppress TensorFlow INFO logs (set in Dockerfile by default).
-
 **After first deploy**
 
 1. Open a **Railway shell** and run schema + seed using the **direct** Postgres URL (not Accelerate):
@@ -310,7 +308,7 @@ SFace vectors are **not comparable** to legacy face-api 128-d vectors (same leng
 
 ## Low-memory demo (optional)
 
-The face pipeline (TensorFlow.js + canvas) is **memory-heavy**. For a small VPS or tight container, use conservative API settings in `apps/api/.env` (see [`.env.example`](.env.example)):
+The face pipeline (ONNX Runtime + canvas) still uses noticeable RAM during photo jobs. For a small VPS or tight container, use conservative API settings in `apps/api/.env` (see [`.env.example`](.env.example)):
 
 - `PHOTO_PROCESS_CONCURRENCY=1` (do not raise above `1` below ~2 GB RAM)
 - `PHOTO_MAX_IMAGE_DIMENSION=768` (or `512` — reduces RAM but hurts distant faces in crowd shots)
@@ -321,7 +319,7 @@ Size the API container to **≥ 1.5 GB** (tuned) or **≥ 2 GB** (recommended). 
 
 ## License
 
-Source code in this repository is licensed under the [MIT License](LICENSE). Third-party components (TensorFlow.js, face-api weights, Weaviate, marketing images, fonts) are described in [`NOTICE`](NOTICE).
+Source code in this repository is licensed under the [MIT License](LICENSE). Third-party components (YuNet/SFace ONNX, ONNX Runtime, Weaviate, marketing images, fonts) are described in [`NOTICE`](NOTICE).
 
 ## Security
 
