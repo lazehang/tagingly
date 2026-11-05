@@ -1,7 +1,27 @@
-Marketing photos from Unsplash (https://unsplash.com/license)
+Tagingly marketing photographs
+==============================
 
-hero-event.jpg — photo-1511795409834 (event celebration)
-guest-gallery.jpg — photo-1529156069898 (group at event)
-organizer-upload.jpg — photo-1452587925148 (camera / photography)
-event-crowd.jpg — photo-1470229722913 (concert crowd)
-wedding-celebration.jpg — photo-1519741497674 (wedding)
+All images below were AI-generated for Tagingly marketing on 2026-11-05
+(Cursor GenerateImage / Grok Bot Designer Stage 1b). Intended for commercial
+use in this MIT open-core project’s public marketing homepage.
+
+hero-event.jpg
+  AI-generated. Guest at an event viewing a private phone gallery.
+  Generated 2026-11-05. No Unsplash source.
+
+guest-gallery.jpg
+  AI-generated. Hands holding a phone showing a private attendee gallery.
+  Generated 2026-11-05. No Unsplash source.
+
+organizer-upload.jpg
+  AI-generated. Organizer laptop bulk-upload grid of event thumbnails.
+  Generated 2026-11-05. No Unsplash source.
+
+event-crowd.jpg
+  AI-generated. Outdoor group with illustrative face-suggestion chrome
+  (no real match scores). Generated 2026-11-05. No Unsplash source.
+
+Removed
+-------
+wedding-celebration.jpg — unused; deleted in this revamp.
+Prior Unsplash credits for the replaced files no longer apply.

@@ -89,6 +89,16 @@
       inset 0 1px 0 hsl(var(--glow-primary) / 0.1);
   }
 
+  .marketing-album-card {
+    @apply glass-panel-strong p-6 md:p-8;
+    border-top: 8px solid hsl(var(--primary));
+  }
+
+  .marketing-footer-panel {
+    @apply glass-panel-strong rounded-[var(--radius)] px-6 py-8;
+    border-top: 8px solid hsl(var(--primary));
+  }
+
   .glass-nav {
     border-bottom: 1px solid hsl(var(--glass-border) / 0.28);
     background: hsl(var(--background) / 0.92);
@@ -149,7 +159,11 @@
   }
 
   .brand-gradient-text {
-    background: #ffff;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--neon-highlight)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
